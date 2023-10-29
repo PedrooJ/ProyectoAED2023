@@ -1,0 +1,48 @@
+---
+title: "codigo"
+output: html_document
+date: "2023-10-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Carga de datos:
+```{r}
+rvvcca <- read_delim("data/rvvcca.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+Visualización de los datos:
+```{r}
+library(ggplot2)
+
+ggplot(rvvcca, aes(x = PM2.5)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribución de PM2.5", x = "PM2.5", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(rvvcca, aes(x = Fecha, y = PM2.5)) +
+  geom_line(color = "blue") +
+  labs(title = "PM2.5 a lo largo del tiempo", x = "Fecha", y = "PM2.5") +
+  theme_minimal()
+
+ggplot(rvvcca, aes(x = `Dia de la semana`, y = PM2.5)) +
+  geom_boxplot(fill = "lightblue", color = "black") +
+  labs(title = "Distribución de PM2.5 por día de la semana", x = "Día de la semana", y = "PM2.5") +
+  theme_minimal()
+
+ggplot(rvvcca, aes(x = NO, y = NO2)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Scatterplot de NO vs NO2", x = "NO", y = "NO2") +
+  theme_minimal()
+
+ggplot(rvvcca, aes(x = Estacion)) +
+  geom_bar(fill = "darkgreen", color = "black", alpha = 0.7) +
+  labs(title = "Frecuencia de mediciones por estación", x = "Estación", y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
