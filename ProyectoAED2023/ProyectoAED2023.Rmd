@@ -260,7 +260,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr")
 pacman::p_load(char=packages)
 ```
 
@@ -343,7 +343,28 @@ head(num_bancos)
 df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 ```
 
+Vemos como hay cuatro barrios más de lo normal, vamos a solucionarlo:
 
+```{r}
+tail(df)
+
+# El barrio MONTOLIVET se llama únicamente en el dataset "vuln" y "num_bancos" como MONT-OLIVET
+levels(vuln$Barrio)[vuln$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
+levels(num_bancos$Barrio)[num_bancos$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
+
+# Lo mismo ocurre con la Fonteta de sant lluis y el dataset "ibi
+levels(ibi$Barrio)[ibi$Barrio=="FONTETA DE SANT LLUIS"]<-"LA FONTETA S.LLUIS"
+
+# Además, la primera y última observación de barrios no corresponden a ningún barrio, por lo que tenemos que eliminarlas
+num_bancos%<>%slice(-c(1,length(num_bancos$N)))
+```
+
+Una vez solucionado, volvemos a crear el dataset:
+
+```{r}
+df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+head(df)
+```
 
 
 
