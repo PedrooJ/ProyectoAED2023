@@ -235,8 +235,6 @@ addhighlights: |
   points.
 
 ```
-# Carga de paquetes
-
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
 rm(list=ls())
 # CONFIGURACIÓN GENERAL
@@ -257,6 +255,7 @@ knit_hooks$set(inline = function(x) {
 #knit_hooks$set(plot = knitr:::hook_plot_html)
 ```
 
+# Carga de librerías
 
 ```{r}
 library(pacman)
@@ -278,8 +277,11 @@ vuln <- read_delim("./data/vulnerabilidad.csv",
     trim_ws = TRUE)%>%arrange(nombre)
 
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
+colnames(vuln)[colnames(vuln) == "Index_Gl_1"] <-"Indice_Vuln"
+
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
+vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = unique(vuln$Indice_Vuln))
 
 head(vuln)
 ```
@@ -412,7 +414,7 @@ colnames(df)[colnames(df) == "DISTRITO de compra"] <-"Distrito"
 
 df$Distrito<-factor(df$Distrito,levels = unique(df$Distrito))
 
-df%<>%relocate(Barrio,Distrito)
+df%<>%relocate(Barrio,Distrito,Indice_Vuln)
 ```
 
 Por último, vemos como dentro del dataset IBI tenemos por un lado las variables que indica el número de recibos de un cierto tipo y en otra el importe. Consideramos que nos pueden ser más de utilidad las segundas, y para no ser reduntantes vamos a eliminar las de número de recibos. Además, algunas de estas cuentan con entradas decimales, lo cual es un poco extraño para lo que la variable representa.
@@ -421,6 +423,22 @@ Por último, vemos como dentro del dataset IBI tenemos por un lado las variables
 num<-grepl("^Num\\.",colnames(df))
 df%<>%select(-colnames(df)[num])
 ```
+
+Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
+
+```{r}
+head(df)
+```
+```{r}
+summary(df)
+```
+
+```{r}
+glimpse(df)
+```
+
+
+
 
 
 
