@@ -356,7 +356,7 @@ bancos <- read_delim("./data/bancs-en-via-publica-bancos-en-via-publica.csv",
 bancos$Barrio%<>%gsub("[0-9] - ","",.)
 bancos$Barrio%<>%factor(levels = unique(bancos$Barrio))
 
-num_bancos<-bancos%>%group_by(Barrio)%>%summarize(N=n())
+num_bancos<-bancos%>%group_by(Barrio)%>%summarize(Num_bancos=n())
 head(num_bancos)
 ```
 
@@ -418,7 +418,7 @@ df%<>%relocate(Barrio,Distrito)
 Por último, vemos como dentro del dataset IBI tenemos por un lado las variables que indica el número de recibos de un cierto tipo y en otra el importe. Consideramos que nos pueden ser más de utilidad las segundas, y para no ser reduntantes vamos a eliminar las de número de recibos. Además, algunas de estas cuentan con entradas decimales, lo cual es un poco extraño para lo que la variable representa.
 
 ```{r}
-num<-grepl("^Num.",colnames(df))
+num<-grepl("^Num\\.",colnames(df))
 df%<>%select(-colnames(df)[num])
 ```
 
