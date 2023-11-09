@@ -268,7 +268,6 @@ pacman::p_load(char=packages)
 
 ## Vulnerabilidad
 ```{r}
-library(readr)
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
         `Geo Shape` = col_skip()), 
