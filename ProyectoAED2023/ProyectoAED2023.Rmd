@@ -235,7 +235,7 @@ addhighlights: |
   points.
 
 ```
-
+# Carga de paquetes
 
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
 rm(list=ls())
@@ -332,7 +332,7 @@ Debido a que en ningún momento vamos a tratar con tiempo en este dataset, vamos
 ```{r}
 ibi <- read_delim("./data/rebuts-ibi-2022.csv", delim = ";", escape_double = FALSE, col_types = cols(ID = col_skip(), geo_shape = col_skip(), geo_point_2d = col_skip(), Año = col_skip()), trim_ws = TRUE)%>%
   arrange(Barrio)%>%
-  mutate_at(vars(-all_of(c("Distrito","Barrio"))), as.numeric)
+  mutate_at(vars(-all_of(c("Distrito","Barrio"))), ~as.numeric(sub(",",".",.)))
 
 ibi$Barrio<-factor(ibi$Barrio,levels = unique(ibi$Barrio))
 
@@ -390,6 +390,15 @@ head(df)
 ```
 
 
+# Selección de variables
+Observando las 69 variables con las que cuenta nuestro conjunto, vemos como claramente hay muchas que no necesitamos. Primero, tenemos todos los códigos de los barrios, que prácticamente cada dataset de los anteriores contaba con una o más variables de este estilo, y con distintos nombres entre sí. Vamos a empezar eliminandolas aplicando expresiones regulares, ya que todas cuentan con una cosa en común, que empiezan por "cod":
+
+```{r}
+codigos<-grepl("^[Cc]od",colnames(df))
+df%<>%select(-colnames(df)[codigos])
+```
+
+Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer más:
 
 
 
