@@ -260,7 +260,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr")
 pacman::p_load(char=packages)
 ```
 
@@ -398,7 +398,21 @@ codigos<-grepl("^[Cc]od",colnames(df))
 df%<>%select(-colnames(df)[codigos])
 ```
 
-Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer más:
+Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer más. También tenemos otra variable redundante, que son los distritos. Como el distrito de compra es el único que no tiene ningún valor perdido, usaremos ese, y además, lo transformaremos en factor:
+
+```{r}
+distritos<-colnames(df)[grepl("^DISTRITO|Distrito",colnames(df))]
+distritos<-distritos[distritos!="DISTRITO de compra"]
+
+df%<>%select(-distritos)
+
+colnames(df)[colnames(df) == "DISTRITO de compra"] <-"Distrito"
+
+df$Distrito<-factor(df$Distrito,levels = unique(df$Distrito))
+
+df%<>%relocate(Barrio,Distrito)
+```
+
 
 
 
