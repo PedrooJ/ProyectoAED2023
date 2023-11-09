@@ -266,7 +266,11 @@ pacman::p_load(char=packages)
 
 # Carga de datos
 
+Para crear el dataset con el que vamos a tratar en este proyecto, hemos extraido varios archivos de la [web](https://valencia.opendatasoft.com/pages/home/) del portal de datos abiertos del Ayuntamiento de Valencia. En ellos tenemos diferente información acerca de los 88 barrios que hay en Valencia, como pueden ser el número de zonas verdes, precio del alquiler, actividad comercial, renta, etc. Antes de atacar las preguntas que nuestro conjunto resolverá, vamos a cargar los datos y unirlos en un único dataset, con una variable común para todos, el barrio.
+
 ## Vulnerabilidad
+El primer dataset [Vulnerabilidad](https://valencia.opendatasoft.com/explore/dataset/vulnerabilidad/table/) nos da información general del barrio, como la densidad de población, la renta media, o el estado de vulnerabilidad. Esta última variable será de gran interés en nuestro análisis posterior.
+
 ```{r}
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
@@ -276,9 +280,15 @@ vuln <- read_delim("./data/vulnerabilidad.csv",
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
+
+head(vuln)
 ```
 
+Podemos ver en el código que es importante transformar la variable `Barrio` en un factor, para poder graficar y tratar la información de forma adecuada. Repetiremos este proceso en cada conjunto de datos, además de poner a todos el mismo nombre para poder unirlos más adelante.
+
 ## Barrios
+El conjunto [Barrios](https://valencia.opendatasoft.com/explore/dataset/barris-barrios/table/) nos da también información general del barrio, concretamente el area del mismo, ya que el resto de variables son códigos para identificar los barrios de los cuales nos desharemos junto con el resto de códigos de los otros datasets.
+
 ```{r}
 barrios <- read_delim("./data/barris-barrios.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(geo_point_2d = col_skip(), geo_shape = col_skip()), 
@@ -287,9 +297,13 @@ barrios <- read_delim("./data/barris-barrios.csv",
 colnames(barrios)[colnames(barrios) == "Nombre"] <-"Barrio"
 
 barrios$Barrio<-factor(barrios$Barrio,levels = unique(barrios$Barrio))
+
+head(barrios)
 ```
 
 ## Precio de compra y alquiler
+Estos dos datasets de [compra](https://valencia.opendatasoft.com/explore/dataset/precio-de-compra-en-idealista/table/) y [alquiler](https://valencia.opendatasoft.com/explore/dataset/precio-alquiler-vivienda/table/) nos presentan informaciones similares, que es la media de precios de compra y alquiler en nuestros barrios en los años 2022 y 2010, además de el máximo histórico y el año donde se alcanzó. Ya que son conjuntos muy similares, vamos a adelantarnos al próximo paso y fusionarlos en un único dataset, llamado `precios`.
+
 ```{r}
 p_compra <- read_delim("./data/precio-de-compra-en-idealista.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
@@ -311,6 +325,10 @@ head(precios)
 ```
 
 ## Recibos IBI
+Vamos ahora con el dataset [IBI](https://valencia.opendatasoft.com/explore/dataset/rebuts-ibi-2022/table/), que nos da información de los diferentes recibos del IBI (Impuesto sobre Bienes Inmuebles) entre los años 2021 y 2023. Este conjunto nos va a dar una muy buena visión acerca de la actividad del barrio, tanto comercial como cultural, turística, religiosa, industrial, etc. 
+
+Debido a que en ningún momento vamos a tratar con tiempo en este dataset, vamos a eliminar los años haciendo la media de las observaciones de cada barrio durante estos tres años, para así obtener tantas observaciones como barrios, ya que si no habrá conflictos a la hora de unir los datos.
+
 ```{r}
 ibi <- read_delim("./data/rebuts-ibi-2022.csv", delim = ";", escape_double = FALSE, col_types = cols(ID = col_skip(), geo_shape = col_skip(), geo_point_2d = col_skip(), Año = col_skip()), trim_ws = TRUE)%>%
   arrange(Barrio)%>%
@@ -320,9 +338,13 @@ ibi$Barrio<-factor(ibi$Barrio,levels = unique(ibi$Barrio))
 
 # Hacemos la media de las observaciones de cada barrio en los tres año y nos quitamos 2/3 de las observaciones
 ibi <- ibi %>% group_by(Barrio) %>%  mutate(across(where(is.numeric), mean, na.rm=TRUE))%>%distinct()
+
+head(ibi)
 ```
 
 ## Bancos por barrio
+Por último, vamos con nuestro último conjunto de datos, [barrios](https://valencia.opendatasoft.com/explore/dataset/bancs-en-via-publica-bancos-en-via-publica/table/), que contiene mucha información acerca de la ubicación de las entidades bancarias en nuestra ciudad. Debido a que nosotros solo vamos a tratar con barrios y no con direcciones ni nada similar, hemos decidido que lo más interesante de este conjunto es el número de bancos que podemos encontrar en cada barrio (puede ser un buen indicador de riqueza o pobreza). Guardaremos esta información en un nuevo dataset llamado `num_bancos`.
+
 ```{r}
 bancos <- read_delim("./data/bancs-en-via-publica-bancos-en-via-publica.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(gid = col_skip(), 
@@ -340,13 +362,13 @@ head(num_bancos)
 
 ```{r}
 df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+
+tail(df)
 ```
 
-Vemos como hay cuatro barrios más de lo normal, vamos a solucionarlo:
+Vemos como a la hora de fusionar todos los datos en un solo dataset, tenemos un problema, y es que contamos con más observaciones de las esperadas. Deberíamos tener un total de 88 observaciones (una por cada barrio), pero en cambio, tenemos 92. Mirando el final del dataset, vemos como efectivamente hay cuatro observaciones que no se corresponden con lo deseado, así que vamos a arreglarlo.
 
 ```{r}
-tail(df)
-
 # El barrio MONTOLIVET se llama únicamente en el dataset "vuln" y "num_bancos" como MONT-OLIVET
 levels(vuln$Barrio)[vuln$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
 levels(num_bancos$Barrio)[num_bancos$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
@@ -358,12 +380,16 @@ levels(ibi$Barrio)[ibi$Barrio=="FONTETA DE SANT LLUIS"]<-"LA FONTETA S.LLUIS"
 num_bancos%<>%slice(-c(1,length(num_bancos$N)))
 ```
 
+Vemos como dos de estas incongruencias se debían a la distinta forma de escribir el nombre de los barrios, mientras que las otras dos simplemente se debían a que algún dataset contenía información de barrios desconocidos, lo cual es mejor eliminar directamente.
+
 Una vez solucionado, volvemos a crear el dataset:
 
 ```{r}
 df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 head(df)
 ```
+
+
 
 
 
