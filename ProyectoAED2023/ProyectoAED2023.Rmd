@@ -302,19 +302,21 @@ head(barrios)
 ```
 
 ## Precio de compra y alquiler
-Estos dos datasets de [compra](https://valencia.opendatasoft.com/explore/dataset/precio-de-compra-en-idealista/table/) y [alquiler](https://valencia.opendatasoft.com/explore/dataset/precio-alquiler-vivienda/table/) nos presentan informaciones similares, que es la media de precios de compra y alquiler en nuestros barrios en los años 2022 y 2010, además de el máximo histórico y el año donde se alcanzó. Ya que son conjuntos muy similares, vamos a adelantarnos al próximo paso y fusionarlos en un único dataset, llamado `precios`.
+Estos dos datasets de [compra](https://valencia.opendatasoft.com/explore/dataset/precio-de-compra-en-idealista/table/) y [alquiler](https://valencia.opendatasoft.com/explore/dataset/precio-alquiler-vivienda/table/) nos presentan informaciones similares, que es la media de precios de compra y alquiler en nuestros barrios en los años 2022 y 2010. Ya que son conjuntos muy similares, vamos a adelantarnos al próximo paso y fusionarlos en un único dataset, llamado `precios`.
 
 ```{r}
 p_compra <- read_delim("./data/precio-de-compra-en-idealista.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
-        `Geo Shape` = col_skip(), Fecha_creacion = col_skip()), 
+        `Geo Shape` = col_skip(), Fecha_creacion = col_skip(),`Max_historico (Euros/m2)` = col_skip(), 
+        Año_Max_Hist = col_skip()), 
     trim_ws = TRUE)%>%arrange(BARRIO)
 
 p_compra$BARRIO<-factor(p_compra$BARRIO,levels = unique(p_compra$BARRIO))
 
 p_alquiler <- read_delim("./data/precio-alquiler-vivienda.csv", 
     delim = ";", escape_double = FALSE, 
-    trim_ws = TRUE)%>%arrange(BARRIO)
+    trim_ws = TRUE, col_types = cols(`Geo Point` = col_skip(), `Geo Shape` = col_skip(), Fecha_creacion = col_skip(),`Max_historico (Euros/m2)` = col_skip(), 
+        Año_Max_Hist = col_skip()))%>%arrange(BARRIO)
 
 p_alquiler$BARRIO<-factor(p_alquiler$BARRIO,levels = unique(p_alquiler$BARRIO))
 
@@ -412,6 +414,14 @@ df$Distrito<-factor(df$Distrito,levels = unique(df$Distrito))
 
 df%<>%relocate(Barrio,Distrito)
 ```
+
+Por último, vemos como dentro del dataset IBI tenemos por un lado las variables que indica el número de recibos de un cierto tipo y en otra el importe. Consideramos que nos pueden ser más de utilidad las segundas, y para no ser reduntantes vamos a eliminar las de número de recibos. Además, algunas de estas cuentan con entradas decimales, lo cual es un poco extraño para lo que la variable representa.
+
+```{r}
+num<-grepl("^Num.",colnames(df))
+df%<>%select(-colnames(df)[num])
+```
+
 
 
 
