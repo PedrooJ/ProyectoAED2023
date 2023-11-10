@@ -437,13 +437,47 @@ summary(df)
 glimpse(df)
 ```
 
+# Estudio de la vulnerabilidad
 
+## Mapa de barrios vulnerables
 
+```{r}
+#primero creamos un mapa con los barrios y distrito
+library(sf)
+library(ggplot2)
 
+# Lee el archivo GeoJSON
+datos_geojson <- st_read("./data/barris-barrios.geojson")
 
+#datos_geojson$nombre[datos_geojson$nombre %in% df$Barrio]
+#df$Barrio[!df$Barrio %in% datos_geojson$nombre]
+```
 
+```{r}
+library(leaflet)
 
+datos_geojson <- datos_geojson %>%
+  mutate(Indice_Vuln = df$Indice_Vuln[which(df$Barrio %in% datos_geojson$nombre)])
 
+popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
 
+pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Indice_Vuln))
 
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Indice_Vuln,
+            title = 'Leyenda',
+            opacity = 1)
 
+```
