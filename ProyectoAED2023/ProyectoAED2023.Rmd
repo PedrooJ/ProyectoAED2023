@@ -439,16 +439,6 @@ glimpse(df)
 
 
 # Estudio de la vulnerabilidad
-```{r}
-# Cambio el nombre de la variable que representa la vulnerabilidad para que sea más intuitiva
-colnames(df)[which(colnames(df) == 'Index_Gl_1')] <- 'Vulnerabilidad'
-```
-Vemos que la columna `vulnerabilidad` es de tipo carácter, y que además hay valores NA. Lo primero de todo se va a cambiar los valores NA por 'indefinido'.
-
-```{r}
-# Arrego los valores de 
-df$Vulnerabilidad <- factor(df$Vulnerabilidad, levels = c('No Vulnerable', 'Pot. Vulnerable', 'Vulnerable'))
-```
 
 ## Mapa de barrios vulnerables
 
@@ -468,15 +458,15 @@ datos_geojson <- st_read("./data/barris-barrios.geojson")
 library(leaflet)
 
 datos_geojson <- datos_geojson %>%
-  mutate(Vulnerabilidad = df$Vulnerabilidad[which(df$Barrio %in% datos_geojson$nombre)])
+  mutate(Indice_Vuln = df$Indice_Vuln[which(df$Barrio %in% datos_geojson$nombre)])
 
-popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Vulnerabilidad)
+popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
 
-pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Vulnerabilidad))
+pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Indice_Vuln))
 
 leaflet(data = datos_geojson) %>%
   addTiles() %>%
-  addPolygons(fillColor = pal(datos_geojson$Vulnerabilidad),
+  addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
               weight = 1,
               opacity = 1,
               highlightOptions = highlightOptions(color = "white",
@@ -487,7 +477,7 @@ leaflet(data = datos_geojson) %>%
               popup = popups) %>%
   addLegend(data = datos_geojson,
             position = 'bottomright',
-            pal = pal, values = ~Vulnerabilidad,
+            pal = pal, values = ~Indice_Vuln,
             title = 'Leyenda',
             opacity = 1)
 
