@@ -260,7 +260,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr", "magrittr")
 pacman::p_load(char=packages)
 ```
 
@@ -275,7 +275,7 @@ vuln <- read_delim("./data/vulnerabilidad.csv",
     trim_ws = TRUE)%>%arrange(nombre)
 
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
-
+vuln$Barrio[vuln$Barrio == "MONT-OLIVET"] = "MONTOLIVET"
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
 ```
 
@@ -316,11 +316,13 @@ head(precios)
 ibi <- read_delim("./data/rebuts-ibi-2022.csv", delim = ";", escape_double = FALSE, col_types = cols(ID = col_skip(), geo_shape = col_skip(), geo_point_2d = col_skip(), Año = col_skip()), trim_ws = TRUE)%>%
   arrange(Barrio)%>%
   mutate_at(vars(-all_of(c("Distrito","Barrio"))), as.numeric)
+ibi$Barrio[ibi$Barrio == 'FONTETA DE SANT LLUIS'] <- 'LA FONTETA S.LLUIS'
 
 ibi$Barrio<-factor(ibi$Barrio,levels = unique(ibi$Barrio))
 
 # Hacemos la media de las observaciones de cada barrio en los tres año y nos quitamos 2/3 de las observaciones
 ibi <- ibi %>% group_by(Barrio) %>%  mutate(across(where(is.numeric), mean, na.rm=TRUE))%>%distinct()
+
 ```
 
 ## Bancos por barrio
@@ -345,6 +347,59 @@ df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%
 
 
 
+# Estudio de la vulnerabilidad
+```{r}
+# Cambio el nombre de la variable que representa la vulnerabilidad para que sea más intuitiva
+colnames(df)[which(colnames(df) == 'Index_Gl_1')] <- 'Vulnerabilidad'
+```
+Vemos que la columna `vulnerabilidad` es de tipo carácter, y que además hay valores NA. Lo primero de todo se va a cambiar los valores NA por 'indefinido'.
 
+```{r}
+# Arrego los valores de 
+df$Vulnerabilidad <- factor(df$Vulnerabilidad, levels = c('No Vulnerable', 'Pot. Vulnerable', 'Vulnerable'))
+```
+
+## Mapa de barrios vulnerables
+
+```{r}
+#primero creamos un mapa con los barrios y distrito
+library(sf)
+library(ggplot2)
+
+# Lee el archivo GeoJSON
+datos_geojson <- st_read("./data/barris-barrios.geojson")
+
+#datos_geojson$nombre[datos_geojson$nombre %in% df$Barrio]
+#df$Barrio[!df$Barrio %in% datos_geojson$nombre]
+```
+
+```{r}
+library(leaflet)
+
+datos_geojson <- datos_geojson %>%
+  mutate(Vulnerabilidad = df$Vulnerabilidad[which(df$Barrio %in% datos_geojson$nombre)])
+
+popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Vulnerabilidad)
+
+pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Vulnerabilidad))
+
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$Vulnerabilidad),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Vulnerabilidad,
+            title = 'Leyenda',
+            opacity = 1)
+
+```
 
 
