@@ -263,7 +263,7 @@ packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","read
 pacman::p_load(char=packages)
 ```
 
-# Carga de datos
+# Carga de ficheros
 
 Para crear el dataset con el que vamos a tratar en este proyecto, hemos extraido varios archivos de la [web](https://valencia.opendatasoft.com/pages/home/) del portal de datos abiertos del Ayuntamiento de Valencia. En ellos tenemos diferente información acerca de los 88 barrios que hay en Valencia, como pueden ser el número de zonas verdes, precio del alquiler, actividad comercial, renta, etc. Antes de atacar las preguntas que nuestro conjunto resolverá, vamos a cargar los datos y unirlos en un único dataset, con una variable común para todos, el barrio.
 
@@ -429,13 +429,11 @@ Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables inn
 ```{r}
 head(df)
 ```
-```{r}
-summary(df)
-```
 
 ```{r}
 glimpse(df)
 ```
+Tenemos un total de 32 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
 
 # Estudio de la vulnerabilidad
 
