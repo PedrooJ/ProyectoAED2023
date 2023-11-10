@@ -381,7 +381,7 @@ levels(num_bancos$Barrio)[num_bancos$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
 levels(ibi$Barrio)[ibi$Barrio=="FONTETA DE SANT LLUIS"]<-"LA FONTETA S.LLUIS"
 
 # Además, la primera y última observación de barrios no corresponden a ningún barrio, por lo que tenemos que eliminarlas
-num_bancos%<>%slice(-c(1,length(num_bancos$N)))
+num_bancos%<>%slice(-c(1,length(num_bancos$Num_bancos)))
 ```
 
 Vemos como dos de estas incongruencias se debían a la distinta forma de escribir el nombre de los barrios, mientras que las otras dos simplemente se debían a que algún dataset contenía información de barrios desconocidos, lo cual es mejor eliminar directamente.
