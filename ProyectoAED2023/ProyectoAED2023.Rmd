@@ -536,7 +536,7 @@ reglaboxplot<-function(x){
 }
 ```
 
-Vamos a poner un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha selecccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
+Vamos a poner un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha seleccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
 
 ```{r}
 # Corrección de outliers gráfica
@@ -578,7 +578,7 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
   print(df$`Imp. Recibos Actv. Cultural`[df$Barrio=="CIUTAT DE LES ARTS I DE LES CIENCIES"])
 ```
 
-Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7.
+Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación, mantendremos estos outliers en nuestro dataset.
 
 
 ## Representación de los datos
@@ -592,7 +592,7 @@ columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
 columnas_numéricas <- df[columnas_numéricas]
 
 # Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
-for (i in colnames(columnas_numéricas)) {
+for (i in columnas_numericas) {
   p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
     geom_boxplot() + 
     ggtitle(paste("Relación ", i))
