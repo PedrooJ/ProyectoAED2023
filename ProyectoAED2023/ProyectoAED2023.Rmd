@@ -281,7 +281,7 @@ colnames(vuln)[colnames(vuln) == "Index_Gl_1"] <-"Indice_Vuln"
 
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
-vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = unique(vuln$Indice_Vuln))
+vuln$Indice_Vuln<-factor(vuln$Indice_Vuln, levels = c("Vulnerable", "Pot. Vulnerable", "No Vulnerable", NA))
 
 head(vuln)
 ```
@@ -456,14 +456,18 @@ datos_geojson <- st_read("./data/barris-barrios.geojson")
 
 ```{r}
 library(leaflet)
+# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
+vuln2 <- vuln[c('Barrio','Indice_Vuln')]
+colnames(vuln2) <- c('nombre','Indice_Vuln')
+datos_geojson <- merge(x = datos_geojson, y = vuln2)
 
-datos_geojson <- datos_geojson %>%
-  mutate(Indice_Vuln = df$Indice_Vuln[which(df$Barrio %in% datos_geojson$nombre)])
-
+# Creo los popup del mapa
 popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
 
-pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Indice_Vuln))
+# Escojo una paleta de colores
+pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
 
+# Creo el mapa
 leaflet(data = datos_geojson) %>%
   addTiles() %>%
   addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
@@ -483,4 +487,34 @@ leaflet(data = datos_geojson) %>%
 
 ```
 
+```{r}
+# Corrección de algunos outliers
+df %>%
+  group_by(Indice_Vuln) %>%
+  summarise(across(where(is.numeric), list(mediana = ~median(., na.rm = T))))
+
+
+risc_pobre_filtrada <- df %>%
+  filter(Indice_Vuln == 'Vulnerable') %>%
+  filter(risc_pobre < 100) %>%
+  select(risc_pobre)
+df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
+
+
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+
+for (i in colnames(columnas_numéricas)) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+
+```
 
