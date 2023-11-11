@@ -488,11 +488,15 @@ leaflet(data = datos_geojson) %>%
 ```
 
 ```{r}
-# Corrección de algunos outliers
 df %>%
   group_by(Indice_Vuln) %>%
   summarise(across(where(is.numeric), list(mediana = ~median(., na.rm = T))))
+```
 
+Ha sido necesiaro realizar alguna corrección de los *inputs* del *dataset*. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha selecccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferenciaban las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
+```{r}
+# Corrección de algunos outliers
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
 
 risc_pobre_filtrada <- df %>%
   filter(Indice_Vuln == 'Vulnerable') %>%
@@ -500,7 +504,11 @@ risc_pobre_filtrada <- df %>%
   select(risc_pobre)
 df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
 
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
+```
 
+
+```{r}
 # me quedo con las columnas numéricas + Indice_Vuln de df
 columnas_numericas <- df %>%
   select_if(is.numeric) %>%
@@ -508,7 +516,7 @@ columnas_numericas <- df %>%
 columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
 columnas_numéricas <- df[columnas_numéricas]
 
-
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
 for (i in colnames(columnas_numéricas)) {
   p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
     geom_boxplot() + 
@@ -516,5 +524,16 @@ for (i in colnames(columnas_numéricas)) {
   print(p)
 }
 
+```
+
+Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
+```{r}
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
 ```
 
