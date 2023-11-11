@@ -488,6 +488,35 @@ leaflet(data = datos_geojson) %>%
 
 ### Detección de valores perdidos
 
+Antes de tratar con nuestros datos, vamos a analizar la situación de nuestro dataset. Primero, vamos a analizar los valores perdidos.
+
+```{r}
+sum(is.na(df))
+```
+
+Podemos ver que la cantidad de valores perdidos en nuestro conjunto no es precisamente pequeña, y principalmente se debe al hecho de que no todos los conjuntos de datos que hemos fusionado contenían información de todos los barrios, por lo que a la hora de unirlos todos se han generado NAs en las observaciones donde no existían datos. Vamos a ver el estado de nuestras variables:
+
+```{r}
+summary(df)
+```
+
+Una cosa que salta a la vista de las variables del dataset IBI es que cuentan con un único NA, por lo que podemos suponer que se debe a la misma observación, y efectivamente, ésta es la del barrio "RAFALELL-VISTABELLA", que no cuenta con ninguna información numérica en nuestro dataset. Por ello, lo mejor que podemos hacer es eliminar la observación.
+
+```{r}
+df[df$Barrio=="RAFALELL-VISTABELLA",]
+df%<>%drop_na("Importe Recibos personalidad F")
+```
+
+Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que, en vez de poner un NA en los datos al no saber la información, se ha puesto un 0 en su lugar. Vamos a transformar estos 0 en NA para darles un tratamiento correcto.
+
+```{r}
+df%<>%mutate(across(starts_with("Imp"),~ifelse(.==0,NA,.)))
+```
+
+
+
+
+
 ### Detección de outliers
 
 Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. Primero vamos a ver las medianas de cada variable numérica de nuestro conjunto en función de su vulnerabilidad, que va a ser el valor por el que sustituiremos los outliers en caso de haberlos.
