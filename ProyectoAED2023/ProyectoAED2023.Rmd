@@ -281,7 +281,7 @@ colnames(vuln)[colnames(vuln) == "Index_Gl_1"] <-"Indice_Vuln"
 
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
-vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = unique(vuln$Indice_Vuln))
+vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = c("Vulnerable","Pot. Vulnerable","No Vulnerable"))
 
 head(vuln)
 ```
@@ -453,14 +453,18 @@ datos_geojson <- st_read("./data/barris-barrios.geojson")
 
 ```{r}
 library(leaflet)
+# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
+vuln2 <- vuln[c('Barrio','Indice_Vuln')]
+colnames(vuln2) <- c('nombre','Indice_Vuln')
+datos_geojson <- merge(x = datos_geojson, y = vuln2)
 
-datos_geojson <- datos_geojson %>%
-  mutate(Indice_Vuln = df$Indice_Vuln[which(df$Barrio %in% datos_geojson$nombre)])
-
+# Creo los popup del mapa
 popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
 
-pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Indice_Vuln))
+# Escojo una paleta de colores
+pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
 
+# Creo el mapa
 leaflet(data = datos_geojson) %>%
   addTiles() %>%
   addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
@@ -478,4 +482,118 @@ leaflet(data = datos_geojson) %>%
             title = 'Leyenda',
             opacity = 1)
 
+```
+
+## Detección de anomalías
+
+### Detección de valores perdidos
+
+### Detección de outliers
+
+Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. Primero vamos a ver las medianas de cada variable numérica de nuestro conjunto en función de su vulnerabilidad, que va a ser el valor por el que sustituiremos los outliers en caso de haberlos.
+
+```{r}
+df %>%
+  group_by(Indice_Vuln) %>%
+  summarise(across(where(is.numeric), list(mediana = ~median(., na.rm = T))))
+```
+
+Para la detección de outliers vamos a usar los métodos 3-sigma y boxplot, con las funciones definidas en la práctica 5.
+
+```{r}
+reglasigma<-function(x){
+  x<-x[!is.na(x)& is.numeric(x)]
+  out <- logical(length(x)) 
+  
+  for(i in 1:length(x)){
+    if(abs(x[i]-mean(x))>3*sd(x)){
+      out[i]<-TRUE
+    }
+  }
+  if (all(!out)){
+    return(NA)
+  } else {
+    return(out)
+  }
+}
+
+reglaboxplot<-function(x){
+  x<-x[!is.na(x)& is.numeric(x)]
+  out <- logical(length(x)) 
+  
+  for(i in 1:length(x)){
+    if(x[i]>quantile(x,0.75)+1.5*IQR(x)){
+      out[i]<-TRUE
+    } else if (x[i]<quantile(x,0.25)-1.5*IQR(x)){
+      out[i]<-TRUE
+    }
+  }
+  if (all(!out)){
+    return(NA)
+  } else {
+    return(out)
+  }
+}
+```
+
+En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha selecccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
+
+```{r}
+# Corrección de algunos outliers
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
+
+risc_pobre_filtrada <- df %>%
+  filter(Indice_Vuln == 'Vulnerable') %>%
+  filter(risc_pobre < 100) %>%
+  select(risc_pobre)
+df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
+
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
+```
+
+Para el resto de variables, vamos a aplicar las funciones vistas en busca de posibles outliers.
+
+```{r}
+outliers <- df %>%
+  summarise(across(where(is.numeric), list(Sigma = ~sum(reglasigma(.)), Boxplot = ~sum(reglaboxplot(.))),.names = "{col};{fn}"))
+
+outliers%<>%
+  pivot_longer(cols=everything(), names_to = "Var",values_to = "Valor")%>%
+  separate(Var,into=c("Variable", "Regla"),sep=";")%>%
+  spread(key=Regla,value=Valor)
+
+outliers
+```
+
+Viendo que la función boxplot detecta un número excesivo de outliers contando las pocas observaciones que tenemos, vamos a hacer caso a la regla sigma, y eliminar solamente los outliers que esta detecta.
+
+## Representación de los datos
+
+```{r}
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+for (i in colnames(columnas_numéricas)) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+
+```
+
+Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
+```{r}
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
 ```
