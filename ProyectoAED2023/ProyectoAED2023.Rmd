@@ -273,7 +273,7 @@ El primer dataset [Vulnerabilidad](https://valencia.opendatasoft.com/explore/dat
 ```{r}
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
-        `Geo Shape` = col_skip()), 
+        `Geo Shape` = col_skip(), `Densitat_p` = col_skip()), 
     trim_ws = TRUE)%>%arrange(nombre)
 
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
@@ -288,19 +288,21 @@ head(vuln)
 
 Podemos ver en el código que es importante transformar la variable `Barrio` en un factor, para poder graficar y tratar la información de forma adecuada. Repetiremos este proceso en cada conjunto de datos, además de poner a todos el mismo nombre para poder unirlos más adelante.
 
-## Barrios
-El conjunto [Barrios](https://valencia.opendatasoft.com/explore/dataset/barris-barrios/table/) nos da también información general del barrio, concretamente el area del mismo, ya que el resto de variables son códigos para identificar los barrios de los cuales nos desharemos junto con el resto de códigos de los otros datasets.
+## Población
+
+Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
 
 ```{r}
-barrios <- read_delim("./data/barris-barrios.csv", 
-    delim = ";", escape_double = FALSE, col_types = cols(geo_point_2d = col_skip(), geo_shape = col_skip()), 
-    trim_ws = TRUE)%>%arrange(Nombre)
+load("./data/Demografico.RData")
 
-colnames(barrios)[colnames(barrios) == "Nombre"] <-"Barrio"
+colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
 
-barrios$Barrio<-factor(barrios$Barrio,levels = unique(barrios$Barrio))
+demografico$Barrio<-factor(demografico$Barrio,levels = unique(demografico$Barrio))
 
-head(barrios)
+demografico%<>%
+  arrange(`Barrio`)%>%
+  mutate(across(-c("Barrio"), as.numeric))%>%
+  mutate(`Densidad`=`poblacion`/`area`)
 ```
 
 ## Precio de compra y alquiler
@@ -365,7 +367,7 @@ head(num_bancos)
 # Fusionamos todos los dataset
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
 dim(df)
 tail(df)
@@ -390,7 +392,7 @@ Vemos como dos de estas incongruencias se debían a la distinta forma de escribi
 Una vez solucionado, volvemos a crear el dataset:
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
 dim(df)
 head(df)
@@ -653,18 +655,7 @@ df%<>%drop_na("Importe Recibos personalidad F")
 
 Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. 
 
-Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana .En el caso de areas, usaremos la columna zonas verdes, que tienen una correlación de 0.84:
-
-```{r}
-reg<-lm(`Areas de barrios`~`Zones verd`,df)
-  
-df%<>%mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`)&!is.na(`Zones verd`),reg$coefficients[1]+`Zones verd`*reg$coefficients[2],`Areas de barrios`))
-
-df %<>%
-  group_by(`Indice_Vuln`) %>% 
-  mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`),median(`Areas de barrios`,na.rm = TRUE),`Areas de barrios`))%>%
-  ungroup() #No funciona ya que todos los NAs que quedan son los que no tienen Indice de Vulnerabilidad
-```
+Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana. En el caso de los precios de compra de 2022, usaremos la renta media del barrio, que cuentan con una correlación de 0.91:
 
 ```{r}
 reg<-lm(`Precio_2022 (Euros/m2) de compra`~renda_mitj,df)
