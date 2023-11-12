@@ -763,42 +763,97 @@ strong_correlations <- cor_pearson_long %>%
   filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
   filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
 
+# Convertir la matriz de correlación a un formato largo
+cor_spearman_long <- as.data.frame(cor_spearman) %>%
+  rownames_to_column(var = "Variable1") %>%
+  gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+strong_correlations_spearman <- cor_spearman_long %>%
+  filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
+  filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
+
 # Mostrar los resultados
 print(strong_correlations)
+print(strong_correlations_spearman)
+```
+
+#Que correlaciones hay de spearman que no esten en pearson
+```{r}
+# Unir ambos data frames
+all_correlations <- rbind(strong_correlations, strong_correlations_spearman)
+
+# Crear una función para ordenar las variables (para que las parejas sean consistentes en orden)
+order_pair <- function(df) {
+  df %>%
+    rowwise() %>%
+    mutate(Variable1 = pmin(Variable1, Variable2),
+           Variable2 = pmax(Variable1, Variable2)) %>%
+    ungroup()
+}
+
+# Ordenar pares en ambos data frames
+all_correlations_order <- order_pair(all_correlations)
+strong_correlations_order <- order_pair(strong_correlations)
+
+# Encontrar las diferencias
+spearman_not_in_pearson <- anti_join(all_correlations_order, strong_correlations_order, 
+                                 by = c("Variable1", "Variable2"))
 
 ```
 
+
+
 ```{r}
 library(igraph)
+library(dplyr)
 
-# Establecer la semilla para reproducibilidad
 set.seed(137)
 
-# Crear un grafo
-graph_data <- graph_from_data_frame(strong_correlations, directed = FALSE)
+# Asegúrate de que spearman_not_in_pearson tenga las mismas columnas
+spearman_not_in_pearson <- spearman_not_in_pearson %>%
+  select(Variable1, Variable2, Correlation) %>%
+  mutate(Method = "Spearman")
+
+strong_correlations <- strong_correlations %>%
+  select(Variable1, Variable2, Correlation) %>%
+  mutate(Method = "Pearson")
+
+# Combina los datos de Pearson y Spearman
+combined_correlations <- rbind(strong_correlations, spearman_not_in_pearson)
+
+# Crea un grafo a partir de los datos combinados
+graph_data <- graph_from_data_frame(combined_correlations, directed = FALSE)
 
 # Ajustar atributos del nodo
 V(graph_data)$color <- "skyblue"
 V(graph_data)$size <- 6
 V(graph_data)$frame.color <- "black"
 
-# Queremos que las líneas varíen entre 1 y 5 en grosor
-cor_min <- 0.8
-cor_max <- 1.0
-width_min <- 1
-width_max <- 5
-E(graph_data)$width <- (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * 
-                       (width_max - width_min) + width_min
+# Ajustar atributos de las aristas
+E(graph_data)$width <- ifelse(E(graph_data)$Method == "Pearson",
+                              (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * (width_max - width_min) + width_min,
+                              2) # Grosor fijo para Spearman
 
-# Elegir un layout que ofrezca más espacio y optimizar para evitar superposición
+E(graph_data)$lty <- ifelse(E(graph_data)$Method == "Pearson", 1, 3)
+
+# Elegir un layout
 layout <- layout_with_fr(graph_data)
 
 # Dibujar el gráfico
-par(mar = c(0, 0, 1.5, 0)) # Ajustar los márgenes si es necesario
+par(mar = c(0, 0, 1.5, 1))
 plot(graph_data, layout = layout, vertex.label.color = "black", vertex.label.cex = 0.7,
-     vertex.label.dist = 1.2, # Aumentar la distancia de las etiquetas de los nodos
-     edge.label = NA, # Ocultar las etiquetas de las aristas para despejar el gráfico
-     edge.color = "gray",
-     main = "Red de Correlaciones Pearson > 0.8")
+     vertex.label.dist = 1.2,
+     edge.label = NA,
+     edge.color = ifelse(E(graph_data)$Correlation < 0, "red", "gray"),
+     main = "Red de Correlaciones")
+
+# Añadir leyenda
+legend("topright",
+       legend = c("Pearson > 0.8", "Pearson < -0.8", "Spearman > 0.8", "Spearman < -0.8"),
+       col = c("gray", "red", "gray", "red"),
+       lty = c(1,1,3,3),
+       cex = 0.8)
 
 ```
+
