@@ -263,7 +263,7 @@ packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","read
 pacman::p_load(char=packages)
 ```
 
-# Carga de datos
+# Carga de ficheros
 
 Para crear el dataset con el que vamos a tratar en este proyecto, hemos extraido varios archivos de la [web](https://valencia.opendatasoft.com/pages/home/) del portal de datos abiertos del Ayuntamiento de Valencia. En ellos tenemos diferente información acerca de los 88 barrios que hay en Valencia, como pueden ser el número de zonas verdes, precio del alquiler, actividad comercial, renta, etc. Antes de atacar las preguntas que nuestro conjunto resolverá, vamos a cargar los datos y unirlos en un único dataset, con una variable común para todos, el barrio.
 
@@ -273,7 +273,7 @@ El primer dataset [Vulnerabilidad](https://valencia.opendatasoft.com/explore/dat
 ```{r}
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
-        `Geo Shape` = col_skip()), 
+        `Geo Shape` = col_skip(), `Densitat_p` = col_skip()), 
     trim_ws = TRUE)%>%arrange(nombre)
 
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
@@ -281,7 +281,8 @@ colnames(vuln)[colnames(vuln) == "Index_Gl_1"] <-"Indice_Vuln"
 
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
-vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = c("Vulnerable", "Pot. Vulnerable", "No Vulnerable"))
+
+vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = c("Vulnerable","Pot. Vulnerable","No Vulnerable"))
 
 
 head(vuln)
@@ -289,19 +290,21 @@ head(vuln)
 
 Podemos ver en el código que es importante transformar la variable `Barrio` en un factor, para poder graficar y tratar la información de forma adecuada. Repetiremos este proceso en cada conjunto de datos, además de poner a todos el mismo nombre para poder unirlos más adelante.
 
-## Barrios
-El conjunto [Barrios](https://valencia.opendatasoft.com/explore/dataset/barris-barrios/table/) nos da también información general del barrio, concretamente el area del mismo, ya que el resto de variables son códigos para identificar los barrios de los cuales nos desharemos junto con el resto de códigos de los otros datasets.
+## Población
+
+Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
 
 ```{r}
-barrios <- read_delim("./data/barris-barrios.csv", 
-    delim = ";", escape_double = FALSE, col_types = cols(geo_point_2d = col_skip(), geo_shape = col_skip()), 
-    trim_ws = TRUE)%>%arrange(Nombre)
+load("./data/Demografico.RData")
 
-colnames(barrios)[colnames(barrios) == "Nombre"] <-"Barrio"
+colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
 
-barrios$Barrio<-factor(barrios$Barrio,levels = unique(barrios$Barrio))
+demografico$Barrio<-factor(demografico$Barrio,levels = unique(demografico$Barrio))
 
-head(barrios)
+demografico%<>%
+  arrange(`Barrio`)%>%
+  mutate(across(-c("Barrio"), as.numeric))%>%
+  mutate(`Densidad`=`poblacion`/`area`)
 ```
 
 ## Precio de compra y alquiler
@@ -366,8 +369,9 @@ head(num_bancos)
 # Fusionamos todos los dataset
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
+dim(df)
 tail(df)
 ```
 
@@ -390,7 +394,9 @@ Vemos como dos de estas incongruencias se debían a la distinta forma de escribi
 Una vez solucionado, volvemos a crear el dataset:
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+
+dim(df)
 head(df)
 ```
 
@@ -428,15 +434,13 @@ df%<>%select(-colnames(df)[num])
 Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
 
 ```{r}
-head(df)
-```
-```{r}
-summary(df)
+dim(df)
 ```
 
 ```{r}
 glimpse(df)
 ```
+Tenemos un total de 33 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
 # Estudio de la vulnerabilidad
 
 ## Mapa de barrios vulnerables
@@ -448,18 +452,23 @@ library(ggplot2)
 
 # Lee el archivo GeoJSON
 datos_geojson <- st_read("./data/barris-barrios.geojson")
+colnames(datos_geojson)[2] <- 'Barrio'
+
+# Selecciono las columnas de df que quiero utilizar en la siguiente gráfica
+columnas <- c('Barrio', 'Distrito', 'Indice_Vuln', 'area','poblacion','Densidad')
+
+# Creo el dataframe que voy a utilizar para las gráficas
+datos_geojson <- datos_geojson %>%
+  full_join(df[columnas], by = 'Barrio')
+
+
 
 ```
 
 ```{r Mapa vulnerabilidad}
 library(leaflet)
-# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
-vuln2 <- vuln[c('Barrio','Indice_Vuln')]
-colnames(vuln2) <- c('nombre','Indice_Vuln')
-datos_geojson <- merge(x = datos_geojson, y = vuln2)
-
 # Creo los popup del mapa
-popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
+popups <- paste0("<b>", datos_geojson$Barrio, "</b>", "<hr>", 'poblacion: ', datos_geojson$poblacion)
 
 # Escojo una paleta de colores
 pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
@@ -484,11 +493,39 @@ leaflet(data = datos_geojson) %>%
 
 ```
 
+
+```{r}
+# Creo los popup del mapa
+popups <- paste0("<b>", datos_geojson$Barrio, "</b>", "<hr>", datos_geojson$poblacion)
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = datos_geojson$poblacion, bins = 6)
+
+# Creo el mapa
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$poblacion),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~poblacion,
+            title = 'Leyenda',
+            opacity = 1)
+```
+
+
 ```{r}
 ## Estudio de Vulnerabilidad por distrito
 # Creo una tabla de frecuencias, le pongo useNA para que también considere los datos faltantes
 table_data <- table(df$Distrito, df$Indice_Vuln, useNA = 'ifany')
-df_table <- as.data.frame(as.table(table_data)) 
+df_table <- as.data.frame(as.table(table_data))
 
 
 colnames(df_table) <- c('Var1', 'Vulnerabilidad', 'Freq')
@@ -505,6 +542,25 @@ ggplot(df_table, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(y="Vulnerabilidad", x="Distrito") 
 ```
+
+```{r}
+# Creo una tabla con las columnas Dist|Barrio|Vuln|poblacion
+columnas <- c('Barrio','Distrito','Indice_Vuln','poblacion')
+df_table2 <- df %>%
+  select(columnas) %>%
+  group_by(Distrito, Indice_Vuln) %>%
+  summarise(across(poblacion, list(suma=~sum(., na.rm = T))))
+
+df_table2$Indice_Vuln <- factor(df_table2$Indice_Vuln, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))
+
+ggplot(df_table2, aes(x = Distrito, y = poblacion_suma, fill = Indice_Vuln)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Barras apiladas") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="Vulnerabilidad", x="Distrito") 
+
+```
+
 
 
 ```{r}
@@ -525,14 +581,91 @@ ggplot(df_table2, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
   labs(y="Vulnerabilidad (%)", x="Distrito") 
 ```
 
+
+# Distribución poblacional
 ```{r}
-# vamos a hacer un mapa donde se muestren los barrios
+# vamos a hacer un mapa donde se muestre la cantidad de gente que vive en cada barrio
+distritos_geojson <- st_read("./data/districtes-distritos.geojson")
+# El nombre de uno de los distritos no coincide -> lo cambio a mano
+distritos_geojson$nombre[distritos_geojson$nombre == 'POBLATS DE L\'OEST'] <- "POBLATS LOEST"
+colnames(distritos_geojson)[2] <- 'Distrito'
+
+# Selecciono las columnas que quiero utilizar en la siguiente gráfica
+columnas <- c('Barrio', 'Distrito', 'Indice_Vuln', 'area','poblacion')
+
+# Creo el dataframe que voy a utilizar para las gráficas
+distritos_geojson <- distritos_geojson %>%
+  full_join(df[columnas], by = 'Distrito')
+
+# Creo una variable nueva que sea la poblacion del distrito donde se encuentra cada barrio
+distritos_geojson <- distritos_geojson %>%
+  group_by(Distrito) %>%
+  mutate(Pob_dist = sum(poblacion, na.rm = T))
 
 
 ```
 
 
+```{r}
+#    PRIMERO LA DISTRIBUCÓN DE POBLACIÓN
 
+
+# Creo los popup del mapa
+popups_dist <- paste0("<b>", distritos_geojson$Distrito, "</b>", "<hr>", paste('Población: \n', distritos_geojson$Pob_dist))
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = distritos_geojson$Pob_dist, bins = 6)
+
+# Creo el mapa
+leaflet(data = distritos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(distritos_geojson$Pob_dist),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups_dist) %>%
+  addLegend(data = distritos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Pob_dist,
+            title = 'Leyenda',
+            opacity = 1)
+
+
+```
+
+```{r}
+# Ahora para barrios
+
+# Creo los popup del mapa
+popups <- paste0("<b>", distritos_geojson$Barrio, "</b>", "<hr>", paste('Población: \n', distritos_geojson$poblacion))
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = distritos_geojson$poblacion, bins = 6)
+
+# Creo el mapa
+leaflet(data = distritos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(distritos_geojson$poblacion),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = distritos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~poblacion,
+            title = 'Leyenda',
+            opacity = 1)
+
+
+```
 
 
 Ha sido necesiaro realizar alguna corrección de los *inputs* del *dataset*. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha selecccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferenciaban las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
