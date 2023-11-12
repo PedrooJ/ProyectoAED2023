@@ -614,7 +614,7 @@ for (i in columnas_numericas) {
 ```
 
 Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
-```{r}
+```{r eval=FALSE, include=FALSE}
 precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
 colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
 
@@ -648,17 +648,58 @@ df[df$Barrio=="RAFALELL-VISTABELLA",]
 df%<>%drop_na("Importe Recibos personalidad F")
 ```
 
-Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. 
+Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. 
 
-En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana .En el caso de areas, usaremos la columna zonas verdes, que tienen una correlación de 0.84:
+Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana .En el caso de areas, usaremos la columna zonas verdes, que tienen una correlación de 0.84:
 
 ```{r}
 reg<-lm(`Areas de barrios`~`Zones verd`,df)
   
 df%<>%mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`)&!is.na(`Zones verd`),reg$coefficients[1]+`Zones verd`*reg$coefficients[2],`Areas de barrios`))
 
-#df%<>%mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`),median(`Areas de barrios`[""]),`Areas de barrios`))
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`),median(`Areas de barrios`,na.rm = TRUE),`Areas de barrios`))%>%
+  ungroup() #No funciona ya que todos los NAs que quedan son los que no tienen Indice de Vulnerabilidad
 ```
+
+```{r}
+reg<-lm(`Precio_2022 (Euros/m2) de compra`~renda_mitj,df)
+  
+df%<>%mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`)&!is.na(renda_mitj),reg$coefficients[1]+renda_mitj*reg$coefficients[2],`Precio_2022 (Euros/m2) de compra`))
+
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`),median(`Precio_2022 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2022 (Euros/m2) de compra`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2010 (Euros/m2) de compra`=ifelse(is.na(`Precio_2010 (Euros/m2) de compra`),median(`Precio_2010 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2010 (Euros/m2) de compra`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2022 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2022 (Euros/m2) de alquiler`),median(`Precio_2022 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2022 (Euros/m2) de alquiler`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2010 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2010 (Euros/m2) de alquiler`),median(`Precio_2010 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2010 (Euros/m2) de alquiler`))%>%
+  ungroup() 
+```
+
+```{r}
+summary(df)
+```
+
+Tras esto hemos logrado pasar de tener un número muy elevado de NAs a tener solo 4 en ciertas varibles. Estos NAs están en los barrios que carecen de índice de vulverabilidad, por lo que tendremos que esperar a ponerles una etiqueta a estos barrios para librarnos de los NAs de forma adecuada.
 
 ### Detección de outliers
 
