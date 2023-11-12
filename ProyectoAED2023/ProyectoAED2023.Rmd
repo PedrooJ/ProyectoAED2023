@@ -367,6 +367,7 @@ head(num_bancos)
 ```{r}
 df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
+dim(df)
 tail(df)
 ```
 
@@ -390,6 +391,8 @@ Una vez solucionado, volvemos a crear el dataset:
 
 ```{r}
 df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+
+dim(df)
 head(df)
 ```
 
@@ -427,7 +430,7 @@ df%<>%select(-colnames(df)[num])
 Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
 
 ```{r}
-head(df)
+dim(df)
 ```
 
 ```{r}
