@@ -435,6 +435,114 @@ glimpse(df)
 ```
 Tenemos un total de 32 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
 
+# Estudio de la correlación
+
+```{r}
+library(GGally)
+library(dplyr)
+
+# Selecciona solo columnas numéricas
+df_numeric <- select_if(df, is.numeric)
+
+# Correlación de Pearson
+cor_pearson <- cor(df_numeric, method = "pearson", use = "complete.obs")
+
+# Correlación de Spearman
+cor_spearman <- cor(df_numeric, method = "spearman", use = "complete.obs")
+```
+
+
+```{r}
+library(tidyr)
+# Convertir la matriz de correlación a un formato largo
+cor_pearson_long <- as.data.frame(cor_pearson) %>%
+  rownames_to_column(var = "Variable1") %>%
+  gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+strong_correlations <- cor_pearson_long %>%
+  filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
+  filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
+
+# Mostrar los resultados
+print(strong_correlations)
+
+```
+```{r}
+library(igraph)
+
+# Establecer la semilla para reproducibilidad
+set.seed(130)
+
+# Crear un grafo
+graph_data <- graph_from_data_frame(strong_correlations, directed = FALSE)
+
+# Ajustar atributos del nodo
+V(graph_data)$color <- "skyblue"
+V(graph_data)$size <- 6
+V(graph_data)$frame.color <- "black"
+
+# Queremos que las líneas varíen entre 1 y 5 en grosor
+cor_min <- 0.8
+cor_max <- 1.0
+width_min <- 1
+width_max <- 5
+E(graph_data)$width <- (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * 
+                       (width_max - width_min) + width_min
+
+# Elegir un layout que ofrezca más espacio y optimizar para evitar superposición
+layout <- layout_with_fr(graph_data)
+
+# Dibujar el gráfico
+par(mar = c(0, 0, 1.5, 0)) # Ajustar los márgenes si es necesario
+plot(graph_data, layout = layout, vertex.label.color = "black", vertex.label.cex = 0.7,
+     vertex.label.dist = 1.2, # Aumentar la distancia de las etiquetas de los nodos
+     edge.label = NA, # Ocultar las etiquetas de las aristas para despejar el gráfico
+     edge.color = "gray",
+     main = "Red de Correlaciones Pearson > 0.8")
+
+```
+
+```{r}
+library(ggplot2)
+
+# Crear un gráfico de etiquetas
+ggplot(strong_correlations, aes(x = Variable1, y = Variable2, label = round(Correlation, 2))) +
+  geom_tile(aes(fill = Correlation), color = "white") +
+  geom_text() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0.8) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+```{r}
+library(ggplot2)
+# Convertir cor_pearson a formato largo
+cor_pearson_long <- cor_pearson %>% 
+                    as.data.frame() %>% 
+                    rownames_to_column(var = "Variable1") %>% 
+                    gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Visualizar con ggplot2
+ggplot(cor_pearson_long, aes(x = Variable1, y = Variable2, fill = Correlation)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+# Suponiendo que tu dataframe se llama df
+write.table(df, file = "barrios.txt", sep = "\t")
+```
+
+
+
 # Estudio de la vulnerabilidad
 
 ## Mapa de barrios vulnerables
@@ -484,6 +592,39 @@ leaflet(data = datos_geojson) %>%
 
 ```
 
+
+## Representación de los datos
+
+```{r}
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+for (i in columnas_numericas) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+
+```
+
+Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
+```{r}
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
+```
+
+
 ## Detección de anomalías
 
 ### Detección de valores perdidos
@@ -509,25 +650,19 @@ df%<>%drop_na("Importe Recibos personalidad F")
 
 Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. 
 
-En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. Además, dado que la variable de las areas tiene un gran número de NA, y no nos aporta una información relevante, vamos a eliminarla
+En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana .En el caso de areas, usaremos la columna zonas verdes, que tienen una correlación de 0.84:
 
 ```{r}
-df%<>%select(-c("Areas de barrios"))
+reg<-lm(`Areas de barrios`~`Zones verd`,df)
+  
+df%<>%mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`)&!is.na(`Zones verd`),reg$coefficients[1]+`Zones verd`*reg$coefficients[2],`Areas de barrios`))
 
-df%<>%mutate(across(-starts_with("Imp"),~ifelse(is.na(.),median(.),.)))
-
-summary(df)
+#df%<>%mutate(`Areas de barrios`=ifelse(is.na(`Areas de barrios`),median(`Areas de barrios`[""]),`Areas de barrios`))
 ```
 
 ### Detección de outliers
 
-Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. Primero vamos a ver las medianas de cada variable numérica de nuestro conjunto en función de su vulnerabilidad, que va a ser el valor por el que sustituiremos los outliers en caso de haberlos.
-
-```{r}
-df %>%
-  group_by(Indice_Vuln) %>%
-  summarise(across(where(is.numeric), list(mediana = ~median(., na.rm = T))))
-```
+Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. 
 
 Para la detección de outliers vamos a usar los métodos 3-sigma y boxplot, con las funciones definidas en la práctica 5.
 
@@ -610,35 +745,3 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
 ```
 
 Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación, mantendremos estos outliers en nuestro dataset.
-
-
-## Representación de los datos
-
-```{r}
-# me quedo con las columnas numéricas + Indice_Vuln de df
-columnas_numericas <- df %>%
-  select_if(is.numeric) %>%
-  colnames()
-columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
-columnas_numéricas <- df[columnas_numéricas]
-
-# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
-for (i in columnas_numericas) {
-  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
-    geom_boxplot() + 
-    ggtitle(paste("Relación ", i))
-  print(p)
-}
-
-```
-
-Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
-```{r}
-precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
-colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
-
-precio_compra %>%
-  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
-
-ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
-```
