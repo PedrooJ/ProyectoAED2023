@@ -488,11 +488,20 @@ leaflet(data = datos_geojson) %>%
 ```
 
 ```{r}
+
 table_data <- table(df$Distrito, df$Indice_Vuln)
 df_table <- as.data.frame(as.table(table_data)) 
 colnames(df_table) <- c('Var1', 'Vulnerabilidad', 'Freq')
 df_table$Vulnerabilidad <- factor(df_table$Vulnerabilidad, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))
 
+df %>%
+  group_by(Indice_Vuln) %>%
+  summarise(across(where(is.numeric), list(mediana = ~median(., na.rm = T))))
+```
+
+
+
+```{r}
 
 # Crear un gráfico de barras apiladas (mosaic plot)
 ggplot(df_table, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
@@ -562,6 +571,7 @@ for (i in colnames(columnas_numéricas)) {
 
 Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
 ```{r}
+<<<<<<< HEAD
 # Seleccionamos la parte del dataframe que queremos analizar
 precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
 colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', '2010', '2022')
@@ -586,5 +596,14 @@ columnas_categoricas <- df[!(colnames(df) %in% columnas_categoricas)]
 columnas_categoricas %>%
   cor(use="complete.obs") %>%
   corrplot(type="lower", diag=FALSE)
+=======
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
+>>>>>>> bda048e65060fbf97b992fc2d561015fde21084f
 ```
 
