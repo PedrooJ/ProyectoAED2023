@@ -71,29 +71,6 @@ head(vuln)
 
 Podemos ver en el código que es importante transformar la variable `Barrio` en un factor, para poder graficar y tratar la información de forma adecuada. Repetiremos este proceso en cada conjunto de datos, además de poner a todos el mismo nombre para poder unirlos más adelante.
 
-## Población
-
-Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate. El archivo `.RData` ha sido creado a traves del siguiente comando:
-
-
-
-Una vez creado, vamos a cargarlo:
-
-```{r}
-load("./data/Demografico.RData")
-
-colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
-
-demografico$Barrio<-factor(demografico$Barrio,levels = unique(demografico$Barrio))
-
-demografico%<>%
-  arrange(`Barrio`)%>%
-  mutate(across(-c("Barrio"), as.numeric))%>%
-  mutate(`Densidad`=`poblacion`/`area`)
-
-head(demografico)
-```
-
 ## Precio de compra y alquiler
 Estos dos datasets de [compra](https://valencia.opendatasoft.com/explore/dataset/precio-de-compra-en-idealista/table/) y [alquiler](https://valencia.opendatasoft.com/explore/dataset/precio-alquiler-vivienda/table/) nos presentan informaciones similares, que es la media de precios de compra y alquiler en nuestros barrios en los años 2022 y 2010. Ya que son conjuntos muy similares, vamos a adelantarnos al próximo paso y fusionarlos en un único dataset, llamado `precios`.
 
@@ -153,6 +130,100 @@ num_bancos<-bancos%>%group_by(Barrio)%>%summarize(Num_bancos=n())
 head(num_bancos)
 ```
 
+## Población
+
+Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
+
+Este *dataset* se trata de un directorio donde se encuentran un total de 176 archivos Excel. Dos de estos aportan información relacionada con Valencia, mientras que el resto dan información específica de cada barrio (por cada barrio hay dos archivos, uno en castellano y otro en valenciano). Por tanto, hemos creado un programa que abra uno a uno los archivos en un idioma y obtenga la información que deseamos para después guardarla en un dataframe.
+
+Para ello, primero hemos abierto uno de los archivos Excel (ver Figura 1) y se ha estudiado como abordar el problema. Después, se ha cargado uno de ellos, y se ha buscado la manera de obtener la información referida al nombre del barrio, el área y la población del mismo (recuadros amarillos en la Figura 1). 
+![](./ProyectoAED2023/fig/excel.png){withd="80%"}
+*Figura 1: ejemplo de uno de los archivos Excel analizados.*
+
+```{r eval=FALSE, include=TRUE}
+#   SE HA PUESTO CON eval = FALSE PORQUE TARDA MUCHO EN CORRER
+# Obtener las rutas de todos los archivos con los que se va a trabajar
+archivos_barrios <- list.files(path = "./data/Barrios2022", pattern = 'Districte', full.names = TRUE)
+
+# Creamos las listas donde vamos a guardar los datos de interés (la longitud es de 87 porque hay información sobre 87 barrios)
+area <- 1:87
+poblacion <- 1:87
+nombre <- 1:87
+
+# Un bucle que recorre todos los archivos que utilizaremos y extrae los datos de interés
+for (i in 1:length(archivos_barrios)) {
+  Barrio <- read_excel(archivos_barrios[i], sheet = "Padrón")
+  fila <- grep('Padró' ,Barrio[[1]])[1]
+  nombre_barrio <- Barrio[[1]][fila]
+  nombre[i] <-trimws(toupper(substring(nombre_barrio, 36)))
+  fila <- grep('Superficie' ,Barrio$...2)
+  area[i] <- Barrio$...2[fila + 1]
+  fila <- grep('Personas', Barrio[[1]])[1]
+  poblacion[i] <- Barrio[[1]][fila + 1]
+}
+
+demografico <- data.frame(nombre, area, poblacion)
+
+# Hay algunos nombres que se han guardado mal, por lo que vamos a tener que tratarlos. Vemos que todos los que estan mal comienzan por ".  " o por "[0-9].  "
+for (i in 1:length(demografico$nombre)) {
+  if (grepl('^[^A-Za-z]',demografico$nombre)[i]) {
+    demografico$nombre[i] <- str_remove(demografico$nombre[i], "([0-9]|). ")
+  }
+}
+
+# También falta el dato de un barrio, asi que hay una fila de más
+demografico <- demografico[!(demografico$nombre == '88'), ]
+
+# Vemos quales de los nombres del dataframe nuevo no están en el principal
+precios$Barrio[!(demografico$nombre %in% precios$Barrio)]
+
+# Hay que poner de la misma maera que estan en el data-frame pricipal
+demografico$nombre[demografico$nombre == "GRAN VIA"] <- "LA GRAN VIA"
+demografico$nombre[demografico$nombre == "EXPOSICIÓ"] <- "EXPOSICIO"
+demografico$nombre[demografico$nombre == "CIUTAT UNIVERSITÀRIA"] <- "CIUTAT UNIVERSITARIA"
+demografico$nombre[demografico$nombre == "SANT MARCEL·LÍ"] <- "SANT MARCEL.LI"
+demografico$nombre[demografico$nombre == "CAMÍ REAL"] <- "CAMI REAL"
+demografico$nombre[demografico$nombre == "MONT-OLIVET"] <- "MONTOLIVET"
+demografico$nombre[demografico$nombre == "FONTETA DE SANT LLUÍS"] <- "LA FONTETA S.LLUIS"
+demografico$nombre[demografico$nombre == "CIUTAT DE LES ARTS I DE LES CIÈNCIES"] <- "CIUTAT DE LES ARTS I DE LES CIENCIES"
+demografico$nombre[demografico$nombre == "EL CABANYAL- EL CANYAMELAR"] <- "CABANYAL-CANYAMELAR"
+demografico$nombre[demografico$nombre == "EL BOTÀNIC"] <- "EL BOTANIC"
+demografico$nombre[demografico$nombre == "BETERÓ"] <- "BETERO"
+demografico$nombre[demografico$nombre == "CAMÍ FONDO"] <- "CAMI FONDO"
+demografico$nombre[demografico$nombre == "CIUTAT JARDÍ"] <- "CIUTAT JARDI"
+demografico$nombre[demografico$nombre == "LA BEGA BAIXA"] <- "LA VEGA BAIXA"
+demografico$nombre[demografico$nombre == "CAMÍ DE VERA"] <- "CAMI DE VERA"
+demografico$nombre[demografico$nombre == "ORRIOLS"] <- "ELS ORRIOLS"
+demografico$nombre[demografico$nombre == "SANT LLORENÇ"] <- "SANT LLORENS"
+demografico$nombre[demografico$nombre == "CASES DE BÀRCENA"] <- "LES CASES DE BARCENA"
+demografico$nombre[demografico$nombre == "MAUELLA"] <- "MAHUELLA-TAULADELLA"
+demografico$nombre[demografico$nombre == "\t\nBORBOTO"] <- "BORBOTO"
+demografico$nombre[demografico$nombre == "\t\nBENIMAMET"] <- "BENIMAMET"
+demografico$nombre[demografico$nombre == "EL CASTELLAR-L'OLIVERAR"] <- "CASTELLAR-L'OLIVERAL"
+
+# Guardar el RData
+save(demografico, file = "./data/demografico.RData")
+```
+
+Una vez creado, vamos a cargarlo:
+
+```{r}
+load("./data/Demografico.RData")
+
+colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
+
+demografico$Barrio<-factor(demografico$Barrio,levels = unique(demografico$Barrio))
+
+demografico%<>%
+  arrange(`Barrio`)%>%
+  mutate(across(-c("Barrio"), as.numeric))%>%
+  mutate(`Densidad`=`poblacion`/`area`)
+
+head(demografico)
+```
+
+Hemos tenido que aplicar una transformación a las columnas a traves de un mutate y un across ya que estas eran de tipo carácter, y no de tipo numérico.
+
 # Fusionamos todos los dataset
 
 ```{r}
@@ -187,8 +258,9 @@ dim(df)
 head(df)
 ```
 
+Con esto, ya tenemos el número de observaciones deseadas, asi que podemos proceder con el siguiente paso.
 
-# Selección de variables
+# Selección de variables inicial
 Observando las 69 variables con las que cuenta nuestro conjunto, vemos como claramente hay muchas que no necesitamos. Primero, tenemos todos los códigos de los barrios, que prácticamente cada dataset de los anteriores contaba con una o más variables de este estilo, y con distintos nombres entre sí. Vamos a empezar eliminandolas aplicando expresiones regulares, ya que todas cuentan con una cosa en común, que empiezan por "cod":
 
 ```{r}
@@ -256,7 +328,15 @@ ggplot(summary_df, aes(x = variable, y = tipo, fill = tipo)) +
 
 Tenemos un total de 33 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
 
+# Preguntas a resolver
+
+Claramente este conjunto de datos gira entorno a un objeto, los barrios de Valencia. Además, la variable del Índice de Vulnerabilidad consideramos que tiene muchísimo interés. Por tanto, todo nuestro trabajo va a consistir en encontrar las variables que más influyen en esta vulnerabilidad, y encontrar la manera en la que estas contribuyen.
+
+Dado que la variable vulnerabilidad es de tipo factor, hemos tratado de responder estas preguntas, primero, tratando de ver como están correlacionadas las variables numéricas entre sí, creando así unos grupos dentro de las variables. Posteriormente, hemos realizado diferentes gráficas para poder relacionar la compleja relación entre las mismas.
+
 # Estudio de la correlación
+
+(Te encargas tu Pedro)
 
 ```{r}
 # Selecciona solo columnas numéricas
@@ -352,87 +432,6 @@ ggplot(cor_pearson_long, aes(x = Variable1, y = Variable2, fill = Correlation)) 
 # Suponiendo que tu dataframe se llama df
 write.table(df, file = "barrios.txt", sep = "\t")
 ```
-
-
-
-# Estudio de la vulnerabilidad
-
-## Mapa de barrios vulnerables
-
-```{r}
-#primero creamos un mapa con los barrios y distrito
-
-# Lee el archivo GeoJSON
-datos_geojson <- st_read("./data/barris-barrios.geojson")
-
-#datos_geojson$nombre[datos_geojson$nombre %in% df$Barrio]
-#df$Barrio[!df$Barrio %in% datos_geojson$nombre]
-```
-
-```{r}
-# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
-vuln2 <- vuln[c('Barrio','Indice_Vuln')]
-colnames(vuln2) <- c('nombre','Indice_Vuln')
-datos_geojson <- merge(x = datos_geojson, y = vuln2)
-
-# Creo los popup del mapa
-popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
-
-# Escojo una paleta de colores
-pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
-
-# Creo el mapa
-leaflet(data = datos_geojson) %>%
-  addTiles() %>%
-  addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
-              weight = 1,
-              opacity = 1,
-              highlightOptions = highlightOptions(color = "white",
-                                                  weight = 2,
-                                                  bringToFront = TRUE),
-              color = 'black',
-              fillOpacity = 0.8,
-              popup = popups) %>%
-  addLegend(data = datos_geojson,
-            position = 'bottomright',
-            pal = pal, values = ~Indice_Vuln,
-            title = 'Leyenda',
-            opacity = 1)
-
-```
-
-
-## Representación de los datos
-
-```{r}
-# me quedo con las columnas numéricas + Indice_Vuln de df
-columnas_numericas <- df %>%
-  select_if(is.numeric) %>%
-  colnames()
-columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
-columnas_numéricas <- df[columnas_numéricas]
-
-# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
-for (i in columnas_numericas) {
-  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
-    geom_boxplot() + 
-    ggtitle(paste("Relación ", i))
-  print(p)
-}
-
-```
-
-Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
-```{r eval=FALSE, include=FALSE}
-precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
-colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
-
-precio_compra %>%
-  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
-
-ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
-```
-
 
 ## Detección de anomalías
 
@@ -598,3 +597,83 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
 ```
 
 Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación, mantendremos estos outliers en nuestro dataset.
+
+# Estudio de la vulnerabilidad
+
+## Mapa de barrios vulnerables
+
+```{r}
+#primero creamos un mapa con los barrios y distrito
+
+# Lee el archivo GeoJSON
+datos_geojson <- st_read("./data/barris-barrios.geojson")
+
+#datos_geojson$nombre[datos_geojson$nombre %in% df$Barrio]
+#df$Barrio[!df$Barrio %in% datos_geojson$nombre]
+```
+
+```{r}
+# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
+vuln2 <- vuln[c('Barrio','Indice_Vuln')]
+colnames(vuln2) <- c('nombre','Indice_Vuln')
+datos_geojson <- merge(x = datos_geojson, y = vuln2)
+
+# Creo los popup del mapa
+popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
+
+# Escojo una paleta de colores
+pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
+
+# Creo el mapa
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Indice_Vuln,
+            title = 'Leyenda',
+            opacity = 1)
+
+```
+
+
+## Representación de los datos
+
+```{r}
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+for (i in columnas_numericas) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+
+```
+
+Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
+```{r eval=FALSE, include=FALSE}
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
+```
+
+
