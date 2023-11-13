@@ -3,9 +3,12 @@ title: "ProyectoAED2023"
 author: "Mateo López"
 date: "2023-11-13"
 output:
+  html_document:
+    toc: yes
+    df_print: paged
   pdf_document:
     toc: yes
-always_allow_html: true
+always_allow_html: yes
 ---
 
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
@@ -137,7 +140,7 @@ Este conjunto contiene el area y la población de los diferentes barrios. Hemos 
 Este *dataset* se trata de un directorio donde se encuentran un total de 176 archivos Excel. Dos de estos aportan información relacionada con Valencia, mientras que el resto dan información específica de cada barrio (por cada barrio hay dos archivos, uno en castellano y otro en valenciano). Por tanto, hemos creado un programa que abra uno a uno los archivos en un idioma y obtenga la información que deseamos para después guardarla en un dataframe.
 
 Para ello, primero hemos abierto uno de los archivos Excel (ver Figura 1) y se ha estudiado como abordar el problema. Después, se ha cargado uno de ellos, y se ha buscado la manera de obtener la información referida al nombre del barrio, el área y la población del mismo (recuadros amarillos en la Figura 1). 
-![](./ProyectoAED2023/fig/excel.png){withd="80%"}
+![](./fig/excel.png){withd="80%"}
 *Figura 1: ejemplo de uno de los archivos Excel analizados.*
 
 ```{r eval=FALSE, include=TRUE}
@@ -224,7 +227,7 @@ head(demografico)
 
 Hemos tenido que aplicar una transformación a las columnas a traves de un mutate y un across ya que estas eran de tipo carácter, y no de tipo numérico.
 
-# Fusionamos todos los dataset
+# Fusion de los dataset
 
 ```{r}
 df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
@@ -433,14 +436,14 @@ ggplot(cor_pearson_long, aes(x = Variable1, y = Variable2, fill = Correlation)) 
 write.table(df, file = "barrios.txt", sep = "\t")
 ```
 
-## Detección de anomalías
+# Detección de anomalías
 
-### Detección de valores perdidos
+## Detección de valores perdidos
 
 Antes de tratar con nuestros datos, vamos a analizar la situación de nuestro dataset. Primero, vamos a analizar los valores perdidos.
 
 ```{r}
-aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortVars = TRUE, sortCombs = TRUE)
+aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortCombs = TRUE)
 ```
 
 Este gráfico nos muestra las observaciones con valores perididos y en qué columnas se hayan. Por ejemplo, para la primera observación, vemos como todas las columnas a excepción de dos cuentan con un NA, y así sucesivamente, hasta llegar a ver que hay 70 observaciones sin ningún valor perdido.
@@ -452,20 +455,18 @@ sum(is.na(df))
 
 Podemos ver que la cantidad de valores perdidos en nuestro conjunto no es precisamente pequeña, y principalmente se debe al hecho de que no todos los conjuntos de datos que hemos fusionado contenían información de todos los barrios, por lo que a la hora de unirlos todos se han generado NAs en las observaciones donde no existían datos.
 
-Una cosa que salta a la vista de las variables es esa observación que cuenta con casi todos los valores peridos, que es la del barrio "RAFALELL-VISTABELLA", que no cuenta con ninguna información numérica en nuestro dataset. Por ello, lo mejor que podemos hacer es eliminar la observación.
+Una cosa que salta a la vista de las variables es esa observación que cuenta con casi todos los valores perdidos, que es la del barrio "RAFALELL-VISTABELLA", que no cuenta con ninguna información numérica en nuestro dataset. Por ello, lo mejor que podemos hacer es eliminarla.
 
 ```{r}
 df[df$Barrio=="RAFALELL-VISTABELLA",]
 df%<>%drop_na("Importe Recibos personalidad F")
 
-summary(df)
+colSums(is.na(df))
 ```
 
-En el summary podemos ver que variables son las que cuentan con datos perdidos, y por tanto las que debemos procesar.
+En esta tabla podemos ver que variables son las que cuentan con datos perdidos, y por tanto las que debemos procesar. Vemos como las variables del dataset Vulnerabilidad cuentan todas con 4 NAs, que se deben a las observaciones de los barrios que no cuentan con Indice de Vulnerabilidad. Como esta va a ser nuestra variable objetivo durante todo el trabajo, hemos preferido no tratar con ellos, para no alterar así el resultado de nuestras observaciones.
 
-Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. 
-
-Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana. En el caso de los precios de compra de 2022, usaremos la renta media del barrio, que cuentan con una correlación de 0.91:
+Además, dado que algunas columnas, como las de precios, tienen un gran número de NAs, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana de los casos de su misma vulnerabilidad. En el caso de los precios de compra de 2022, usaremos la renta media del barrio, que cuentan con una correlación de 0.91:
 
 ```{r}
 reg<-lm(`Precio_2022 (Euros/m2) de compra`~renda_mitj,df)
@@ -477,6 +478,9 @@ df %<>%
   mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`),median(`Precio_2022 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2022 (Euros/m2) de compra`))%>%
   ungroup() 
 ```
+
+Dado que el resto de variables con NAs no cuentan con ningun índice de correlación extremadamente altos, imputaremos los datos faltantes con la mediana de su mismo grupo de vulnerabilidad.
+
 
 ```{r}
 df %<>%
@@ -506,13 +510,15 @@ df %<>%
   ungroup() 
 ```
 
+Veamos las conclusiones:
+
 ```{r}
-aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortVars = TRUE, sortCombs = TRUE)
+aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortCombs = TRUE)
 ```
 
-Tras esto hemos logrado pasar de tener un número muy elevado de NAs a tener solo 4 en ciertas varibles. Estos NAs están en los barrios que carecen de índice de vulverabilidad, por lo que tendremos que esperar a ponerles una etiqueta a estos barrios para librarnos de los NAs de forma adecuada.
+Tras esto hemos logrado pasar de tener un número muy elevado de NAs a tener solo 4 en ciertas varibles. Estos NAs están en los barrios que carecen de índice de vulverabilidad, por lo que tendríamos que esperar a ponerles una etiqueta a estos barrios para librarnos de los NAs de forma adecuada.
 
-### Detección de outliers
+## Detección de outliers
 
 Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. 
 
@@ -554,22 +560,7 @@ reglaboxplot<-function(x){
 }
 ```
 
-Vamos a poner un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha seleccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
-
-```{r}
-# Corrección de outliers gráfica
-ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
-
-risc_pobre_filtrada <- df %>%
-  filter(Indice_Vuln == 'Vulnerable') %>%
-  filter(risc_pobre < 100) %>%
-  select(risc_pobre)
-df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
-
-ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
-```
-
-Para el resto de variables, vamos a aplicar las funciones vistas en busca de posibles outliers.
+Vamos a aplicar las funciones vistas en busca de posibles outliers:
 
 ```{r}
 outliers <- df %>%
@@ -585,6 +576,31 @@ outliers
 
 Viendo que la función boxplot detecta un número excesivo de outliers contando las pocas observaciones que tenemos, vamos a hacer caso a la regla sigma, y en caso de que haga falta modificar los outliers, solamente trataremos los que esta detecta, pasandolos a la mediana al igual que el ejemplo anterior, o usando alguna otra columna que esté muy correlacionada.
 
+Observando y graficando detenidamente nuestro conjunto, hemos observado dos clases de outliers, un tipo del cual solo hemos detectado un caso, que concluimos que se debe a un fallo de inputación, y otro caso que se debe a un dato correcto, pero demasiado extremo, que rompe con la tendencia del resto de datos. Vamos a ver un ejemplo de cada uno.
+
+### Fallo de inputación
+
+Este un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. 
+
+Por tanto, se ha considerado un error de *input* y se le ha seleccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
+
+```{r}
+# Corrección de outliers gráfica
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
+
+risc_pobre_filtrada <- df %>%
+  filter(Indice_Vuln == 'Vulnerable') %>%
+  filter(risc_pobre < 100) %>%
+  select(risc_pobre)
+df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
+
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
+```
+
+Vemos como era un outlier que no se correspondía con los datos, y al eliminarlo, tenemos una visión mucho más clara de nuestro conjunto.
+
+### Datos correctos
+
 Un ejemplo de outlier puede verse en la variable que muestra la actividad cultural del barrio, viendo como la ciudad de las artes y las ciencias tiene un valor muchísimo más alto que el resto:
 
 ```{r}
@@ -596,9 +612,9 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
   print(df$`Imp. Recibos Actv. Cultural`[df$Barrio=="CIUTAT DE LES ARTS I DE LES CIENCIES"])
 ```
 
-Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación, mantendremos estos outliers en nuestro dataset.
+Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación. Por tanto, hemos decidido mantender estos outliers en nuestro dataset. En ciertos casos interesará eliminarlos siguiendo la regla sigma como hemos visto anteriormente, pero como nos limitamos a un análisis exploratorio, nos limitaremos a detectarlos.
 
-# Estudio de la vulnerabilidad
+# Representación de los datos
 
 ## Mapa de barrios vulnerables
 
@@ -645,35 +661,5 @@ leaflet(data = datos_geojson) %>%
 ```
 
 
-## Representación de los datos
-
-```{r}
-# me quedo con las columnas numéricas + Indice_Vuln de df
-columnas_numericas <- df %>%
-  select_if(is.numeric) %>%
-  colnames()
-columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
-columnas_numéricas <- df[columnas_numéricas]
-
-# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
-for (i in columnas_numericas) {
-  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
-    geom_boxplot() + 
-    ggtitle(paste("Relación ", i))
-  print(p)
-}
-
-```
-
-Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
-```{r eval=FALSE, include=FALSE}
-precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
-colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
-
-precio_compra %>%
-  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
-
-ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
-```
 
 
