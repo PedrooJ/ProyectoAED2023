@@ -725,9 +725,9 @@ columnas_categoricas <- df %>%
 columnas_categoricas <- df[!(colnames(df) %in% columnas_categoricas)] 
 #tabla de contingencia
 
-columnas_categoricas %>%
-  cor(use="complete.obs") %>%
-  corrplot(type="lower", diag=FALSE)
+# columnas_categoricas %>%
+#   cor(use="complete.obs") %>%
+#   corrplot(type="lower", diag=FALSE)
 
 ```
 
@@ -778,6 +778,19 @@ print(strong_correlations)
 print(strong_correlations_spearman)
 ```
 
+
+```{r}
+library(corrplot)
+
+corrplot(cor_spearman, method = "circle", type = "upper", order = "hclust",
+         tl.col = "black", tl.srt = 45,
+         tl.cex = 0.3,
+         cl.lim = c(-1, 1), cl.cex = 0.3, cl.ratio = 0.1,
+         addCoef.col = "black", number.cex = 0.25, coef.cex = 0.3,
+         col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200))
+```
+
+
 #Que correlaciones hay de spearman que no esten en pearson
 ```{r}
 # Unir ambos data frames
@@ -801,8 +814,6 @@ spearman_not_in_pearson <- anti_join(all_correlations_order, strong_correlations
                                  by = c("Variable1", "Variable2"))
 
 ```
-
-
 
 ```{r}
 library(igraph)
@@ -831,6 +842,10 @@ V(graph_data)$size <- 6
 V(graph_data)$frame.color <- "black"
 
 # Ajustar atributos de las aristas
+cor_min <- 0.8
+cor_max <- 1.0
+width_min <- 1
+width_max <- 5
 E(graph_data)$width <- ifelse(E(graph_data)$Method == "Pearson",
                               (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * (width_max - width_min) + width_min,
                               2) # Grosor fijo para Spearman
