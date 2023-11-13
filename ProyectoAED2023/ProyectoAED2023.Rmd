@@ -872,6 +872,26 @@ legend("topright",
        cex = 0.8)
 
 ```
+Vemos que la correlación entre el metro cuadrado de compra y de alquiler es alta pero no tanto como podríamos esperar.
+```{r}
+cor_pearson_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "pearson", use = "complete.obs")
+cor_pearson_precios
+
+cor_spearman_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "spearman", use = "complete.obs")
+cor_spearman_precios
+```
+
+Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso.
+```{r}
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+```
+
+
+
 
 #Realizamos un test chi-cuadrado para conocer si hay una relacion clara entre el distrito en el que se encuentra el barrio y el indice de vulnerabilidad de ese barrio. El resultado es un p-value de 0.01966, por lo que podemos rechazar la hipotesis nula de que las variables son independientes a un nivel de significancia del 0.05 (nivel de significancia estándar).
 ```{r}
