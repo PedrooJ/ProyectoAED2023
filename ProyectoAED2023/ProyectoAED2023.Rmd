@@ -1,5 +1,5 @@
 ---
-title: "proyecto_pdf"
+title: "ProyectoAED2023"
 author: "Mateo López"
 date: "2023-11-13"
 output:
@@ -42,7 +42,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2","ggmosaic","corrplot","readxl","stringr")
 pacman::p_load(char=packages)
 ```
 
@@ -73,7 +73,11 @@ Podemos ver en el código que es importante transformar la variable `Barrio` en 
 
 ## Población
 
-Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
+Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate. El archivo `.RData` ha sido creado a traves del siguiente comando:
+
+
+
+Una vez creado, vamos a cargarlo:
 
 ```{r}
 load("./data/Demografico.RData")
