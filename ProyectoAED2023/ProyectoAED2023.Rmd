@@ -1,248 +1,31 @@
 ---
-title: Full title of the paper (Capitalized)
-author:
-  - name: Dominik Leutnant
-    affil: 1,2,\ddagger,*
-    orcid: 0000-0003-3293-2315
-  - name: John Doe
-    affil: 2, \dagger, \ddagger
-affiliation:
-  - num: 1
-    address: |
-      Muenster University of Applied Sciences - 
-      Institute for Infrastructure, Water, Resources, Environment
-      Correnstr. 25, 48149 Muenster, Germany
-    email: leutnant@fh-muenster.de
-  - num: 2
-    address: |
-      Your department
-      Street, City, Country
-    email: mail@mail.com
-# author citation list in chicago format
-authorcitation: |
-  Leutnant, D.; Doe, J.
-# firstnote to eighthnote
-firstnote: |
-  Current address: Updated affiliation
-secondnote: |
-  These authors contributed equally to this work.
-correspondence: |
-  leutnant@fh-muenster.de; Tel.: +XX-000-00-0000.
-# document options
-journal: notspecified
-type: article
-status: submit
-# front matter
-simplesummary: |
-  A Simple summary goes here.
-abstract: |
-  A single paragraph of about 200 words maximum. For research articles, 
-  abstracts should give a pertinent overview of the work. We strongly encourage
-  authors to use the following style of structured abstracts, but without 
-  headings: 1) Background: Place the question addressed in a broad context and
-  highlight the purpose of the study; 2) Methods: Describe briefly the main
-  methods or treatments applied; 3) Results: Summarize the article's main 
-  findings; and 4) Conclusion: Indicate the main conclusions or interpretations. 
-  The abstract should be an objective representation of the article, it must not 
-  contain results which are not presented and substantiated in the main text and 
-  should not exaggerate the main conclusions.
-# back matter
-keywords: |
-  keyword 1; keyword 2; keyword 3 (list three to ten pertinent keywords specific 
-  to the article, yet reasonably common within the subject discipline.).
-acknowledgement: |
-  All sources of funding of the study should be disclosed. Please clearly 
-  indicate grants that you have received in support of your research work. 
-  Clearly state if you received funds for covering the costs to publish in open 
-  access.
-authorcontributions: |
-  For research articles with several authors, a short paragraph specifying their 
-  individual contributions must be provided. The following statements should be 
-  used ``X.X. and Y.Y. conceive and designed the experiments; X.X. performed the 
-  experiments; X.X. and Y.Y. analyzed the data; W.W. contributed 
-  reagents/materials/analysis tools; Y.Y. wrote the paper.'' Authorship must be
-  limited to those who have contributed substantially to the work reported.
-funding: |
-  Please add: ``This research received no external funding'' or ``This research 
-  was funded by NAME OF FUNDER grant number XXX.'' and  and ``The APC was funded 
-  by XXX''. Check carefully that the details given are accurate and use the 
-  standard spelling of funding agency names at 
-  \url{https://search.crossref.org/funding}, any errors may affect your future 
-  funding.
-institutionalreview: |
-  In this section, you should add the Institutional Review Board Statement and 
-  approval number, if relevant to your study. You might choose to exclude 
-  this statement if the study did not require ethical approval. Please note 
-  that the Editorial Office might ask you for further information. Please add 
-  “The study was conducted in accordance with the Declaration of Helsinki, 
-  and approved by the Institutional Review Board (or Ethics Committee) of 
-  NAME OF INSTITUTE (protocol code XXX and date of approval).” for studies 
-  involving humans. OR “The animal study protocol was approved by the 
-  Institutional Review Board (or Ethics Committee) of NAME OF INSTITUTE 
-  (protocol code XXX and date of approval).” for studies involving animals. 
-  OR “Ethical review and approval were waived for this study due to REASON 
-  (please provide a detailed justification).” OR “Not applicable” for
-   studies not involving humans or animals.
-informedconsent: |
-  Any research article describing a study involving humans should contain this 
-  statement. Please add ``Informed consent was obtained from all subjects 
-  involved in the study.'' OR ``Patient consent was waived due to REASON 
-  (please provide a detailed justification).'' OR ``Not applicable'' for 
-  studies not involving humans. You might also choose to exclude this statement 
-  if the study did not involve humans.
-  
-  Written informed consent for publication must be obtained from participating 
-  patients who can be identified (including by the patients themselves). Please 
-  state ``Written informed consent has been obtained from the patient(s) to 
-  publish this paper'' if applicable.
-dataavailability: |
-  We encourage all authors of articles published in MDPI journals to share 
-  their research data. In this section, please provide details regarding where 
-  data supporting reported results can be found, including links to publicly 
-  archived datasets analyzed or generated during the study. Where no new data 
-  were created, or where data is unavailable due to privacy or ethical 
-  re-strictions, a statement is still required. Suggested Data Availability 
-  Statements are available in section “MDPI Research Data Policies” at 
-  \url{https://www.mdpi.com/ethics}.
-conflictsofinterest: |
-  Declare conflicts of interest or state 'The authors declare no conflict of 
-  interest.' Authors must identify and declare any personal circumstances or
-  interest that may be perceived as inappropriately influencing the
-  representation or interpretation of reported research results. Any role of the
-  funding sponsors in the design of the study; in the collection, analyses or 
-  interpretation of data in the writing of the manuscript, or in the decision to 
-  publish the results must be declared in this section. If there is no role, 
-  please state 'The founding sponsors had no role in the design of the study; 
-  in the collection, analyses, or interpretation of data; in the writing of the 
-  manuscript, an in the decision to publish the results'.
-sampleavailability: |
-  Samples of the compounds ...... are available from the authors.
-supplementary: |
- The following supporting information can be downloaded at:  
- \linksupplementary{s1}, Figure S1: title; Table S1: title; Video S1: title.
-abbreviations:
-  - short: MDPI
-    long: Multidisciplinary Digital Publishing Institute
-  - short: DOAJ
-    long: Directory of open access journals
-  - short: TLA
-    long: Three letter acronym
-  - short: LD 
-    long: linear dichroism
-bibliography: mybibfile.bib
-appendix: appendix.tex
-endnotes: false
-output: 
-  rticles::mdpi_article:
-    extra_dependencies: longtable
+title: "proyecto_pdf"
+author: "Mateo López"
+date: "2023-11-13"
+output:
+  pdf_document:
+    toc: yes
+always_allow_html: true
 ---
 
-# Version
-
-This Rmd-skeleton uses the mdpi Latex template published 2023-03-25. 
-However, the official template gets more frequently updated than the **rticles**
-package. Therefore, please make sure prior to paper submission, that you're 
-using the most recent .cls, .tex and .bst files 
-(available [here](http://www.mdpi.com/authors/latex)).
-
-# Article Header Information
-
-The YAML header includes information needed mainly for formatting the front and 
-back matter of the article. Required elements include:
-
-```yaml
-title: Title of the paper
-author:
-  - name: first and last name
-    affil: |
-      One or more comma seperated numbers corresponding to affilitation
-      and one or more  comma seperated symbols corresponding 
-      optional notes.
-    orcid: optional orcid number
-affiliation:  
-  - num: 1,..., n for each affiliation
-    address: required
-    email: required
-authorcitation: |
-  Lastname, F.
-correspondence: |
-  email@email.com; Tel.: +XX-000-00-0000.
-journal: notspecified
-type: article
-status: submit
-```
-
-Journal options are in Table \ref{tab:mdpinames}. The `status` variable should 
-generally not be changed by authors. The `type` variable describes 
-the type of of submission and defaults to `article` but can be replaced with any of the ones in Table \ref{tab:mdpitype}
-
-```{r mdpitype, echo = FALSE}
-type <- c("abstract, addendum, article, book, bookreview, briefreport, 
-casereport, comment, commentary, communication, conferenceproceedings, 
-correction, conferencereport, entry, expressionofconcern, extendedabstract, 
-datadescriptor, editorial, essay, erratum, hypothesis, interestingimage, 
-obituary, opinion, projectreport, reply, retraction, review, perspective, 
-protocol, shortnote, studyprotocol, systematicreview, supfile, 
-technicalnote, viewpoint, guidelines, registeredreport, tutorial")
-knitr::kable(rticles::string_to_table(type, 3), 
-             col.names = NULL, format = "latex", booktab = TRUE, 
-             caption = "MDPI article types.")
-```
-
-## Journal Specific YAML variables
-
-```yaml
-# for journal Diversity,
-# add the Life Science Identifier using:
-lsid: http://zoobank.org/urn:lsid:zoobank.org:act:nnnn
-
-
-# for journal Applied Sciences
-# add featured application
-featuredapplication: |
-  Authors are encouraged to provide a concise 
-  description of the specific application or 
-  a potential application of the work. This 
-  section is not mandatory.
-
-# for the journal Data
-# add dataset doi and license
-dataset: https://doi.org/10.1000/182
-datasetlicense: CC-BY-4.0
-
-# for the journal Toxins
-# add key contributions
-keycontributions: |
-  The breakthroughs or highlights of the manuscript. 
-  Authors can write one or two sentences to describe 
-  the most important part of the paper.
-
-# for the journal Encyclopedia
-encyclopediadef: |
-  For entry manuscripts only: please provide a brief overview
-  of the entry title instead of an abstract.
-entrylink: The Link to this entry published on the encyclopedia platform.
-
-# for the journal Advances in Respiratory Medicine
-# add highlights
-addhighlights: |
-  This is an obligatory section in “Advances in Respiratory Medicine”, 
-  whose goal is to increase the discoverability and readability of the
-  article via search engines and other scholars. Highlights should not 
-  be a copy of the abstract, but a simple text allowing the reader to 
-  quickly and simplified find out what the article is about and what can 
-  be cited from it. Each of these parts should be devoted up to 2~bullet 
-  points.
-
-```
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
 rm(list=ls())
 # CONFIGURACIÓN GENERAL
 library(knitr)
 options(width = 100)
 # Opciones generales chunks
-opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
-
+knitr::opts_chunk$set(
+	echo = TRUE,
+	error = F,
+	fig.align = "center",
+	fig.path = "./figure/",
+	message = FALSE,
+	warning = FALSE,
+	cache.path = ".cache/",
+	comment = NA,
+	dpi = 100,
+	tidy = F
+)
 #options(xtable.type = 'html')
 knit_hooks$set(inline = function(x) {
   
@@ -259,7 +42,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2")
 pacman::p_load(char=packages)
 ```
 
@@ -273,7 +56,7 @@ El primer dataset [Vulnerabilidad](https://valencia.opendatasoft.com/explore/dat
 ```{r}
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
-        `Geo Shape` = col_skip()), 
+        `Geo Shape` = col_skip(), `Densitat_p` = col_skip()), 
     trim_ws = TRUE)%>%arrange(nombre)
 
 colnames(vuln)[colnames(vuln) == "nombre"] <-"Barrio"
@@ -281,26 +64,30 @@ colnames(vuln)[colnames(vuln) == "Index_Gl_1"] <-"Indice_Vuln"
 
 
 vuln$Barrio<-factor(vuln$Barrio,levels = unique(vuln$Barrio))
-vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = unique(vuln$Indice_Vuln))
+vuln$Indice_Vuln<-factor(vuln$Indice_Vuln,levels = c("Vulnerable","Pot. Vulnerable","No Vulnerable"))
 
 head(vuln)
 ```
 
 Podemos ver en el código que es importante transformar la variable `Barrio` en un factor, para poder graficar y tratar la información de forma adecuada. Repetiremos este proceso en cada conjunto de datos, además de poner a todos el mismo nombre para poder unirlos más adelante.
 
-## Barrios
-El conjunto [Barrios](https://valencia.opendatasoft.com/explore/dataset/barris-barrios/table/) nos da también información general del barrio, concretamente el area del mismo, ya que el resto de variables son códigos para identificar los barrios de los cuales nos desharemos junto con el resto de códigos de los otros datasets.
+## Población
+
+Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
 
 ```{r}
-barrios <- read_delim("./data/barris-barrios.csv", 
-    delim = ";", escape_double = FALSE, col_types = cols(geo_point_2d = col_skip(), geo_shape = col_skip()), 
-    trim_ws = TRUE)%>%arrange(Nombre)
+load("./data/Demografico.RData")
 
-colnames(barrios)[colnames(barrios) == "Nombre"] <-"Barrio"
+colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
 
-barrios$Barrio<-factor(barrios$Barrio,levels = unique(barrios$Barrio))
+demografico$Barrio<-factor(demografico$Barrio,levels = unique(demografico$Barrio))
 
-head(barrios)
+demografico%<>%
+  arrange(`Barrio`)%>%
+  mutate(across(-c("Barrio"), as.numeric))%>%
+  mutate(`Densidad`=`poblacion`/`area`)
+
+head(demografico)
 ```
 
 ## Precio de compra y alquiler
@@ -365,8 +152,9 @@ head(num_bancos)
 # Fusionamos todos los dataset
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
+dim(df)
 tail(df)
 ```
 
@@ -389,7 +177,9 @@ Vemos como dos de estas incongruencias se debían a la distinta forma de escribi
 Una vez solucionado, volvemos a crear el dataset:
 
 ```{r}
-df<-barrios%>%full_join(vuln,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+
+dim(df)
 head(df)
 ```
 
@@ -427,13 +217,139 @@ df%<>%select(-colnames(df)[num])
 Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
 
 ```{r}
+dim(df)
+
 head(df)
 ```
 
 ```{r}
-glimpse(df)
+numeric_cols <- sapply(df, is.numeric)
+factor_cols <- sapply(df, is.factor)
+
+# Crear un data frame para el gráfico de barras
+summary_df <- data.frame(
+  variable = colnames(df),
+  tipo = ifelse(numeric_cols,"Numeric", "Factor"),
+  count = c(sum(numeric_cols), sum(factor_cols))
+)
+
+# Crear un gráfico de barras
+ggplot(summary_df, aes(x = tipo, y = count, fill = tipo)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Número de columnas numéricas y factoriales",
+       x = "Tipo de variable",
+       y = "Número de columnas") +
+  theme_minimal()
+
+ggplot(summary_df, aes(x = variable, y = tipo, fill = tipo)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Número de columnas numéricas y factoriales",
+       x = "Tipo de variable",
+       y = "Número de columnas") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1,size=rel(0.8)))
 ```
-Tenemos un total de 32 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
+
+Tenemos un total de 33 variables numéricas (cuantitativas) y 3 variables de tipo factor (cualitativas). Una vez creado y depurado nuestro conjunto de forma preliminar, vamos a plantear las preguntas que queremos resolver y acabar de poner nuestro dataset a punto.
+
+# Estudio de la correlación
+
+```{r}
+# Selecciona solo columnas numéricas
+df_numeric <- select_if(df, is.numeric)
+
+# Correlación de Pearson
+cor_pearson <- cor(df_numeric, method = "pearson", use = "complete.obs")
+
+# Correlación de Spearman
+cor_spearman <- cor(df_numeric, method = "spearman", use = "complete.obs")
+```
+
+
+```{r}
+# Convertir la matriz de correlación a un formato largo
+cor_pearson_long <- as.data.frame(cor_pearson) %>%
+  rownames_to_column(var = "Variable1") %>%
+  gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+strong_correlations <- cor_pearson_long %>%
+  filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
+  filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
+
+# Mostrar los resultados
+print(strong_correlations)
+
+```
+```{r}
+# Establecer la semilla para reproducibilidad
+set.seed(130)
+
+# Crear un grafo
+graph_data <- graph_from_data_frame(strong_correlations, directed = FALSE)
+
+# Ajustar atributos del nodo
+V(graph_data)$color <- "skyblue"
+V(graph_data)$size <- 6
+V(graph_data)$frame.color <- "black"
+
+# Queremos que las líneas varíen entre 1 y 5 en grosor
+cor_min <- 0.8
+cor_max <- 1.0
+width_min <- 1
+width_max <- 5
+E(graph_data)$width <- (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * 
+                       (width_max - width_min) + width_min
+
+# Elegir un layout que ofrezca más espacio y optimizar para evitar superposición
+layout <- layout_with_fr(graph_data)
+
+# Dibujar el gráfico
+par(mar = c(0, 0, 1.5, 0)) # Ajustar los márgenes si es necesario
+plot(graph_data, layout = layout, vertex.label.color = "black", vertex.label.cex = 0.7,
+     vertex.label.dist = 1.2, # Aumentar la distancia de las etiquetas de los nodos
+     edge.label = NA, # Ocultar las etiquetas de las aristas para despejar el gráfico
+     edge.color = "gray",
+     main = "Red de Correlaciones Pearson > 0.8")
+
+```
+
+```{r}
+# Crear un gráfico de etiquetas
+ggplot(strong_correlations, aes(x = Variable1, y = Variable2, label = round(Correlation, 2))) +
+  geom_tile(aes(fill = Correlation), color = "white") +
+  geom_text() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0.8) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+```{r}
+# Convertir cor_pearson a formato largo
+cor_pearson_long <- cor_pearson %>% 
+                    as.data.frame() %>% 
+                    rownames_to_column(var = "Variable1") %>% 
+                    gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Visualizar con ggplot2
+ggplot(cor_pearson_long, aes(x = Variable1, y = Variable2, fill = Correlation)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+# Suponiendo que tu dataframe se llama df
+write.table(df, file = "barrios.txt", sep = "\t")
+```
+
+
 
 # Estudio de la vulnerabilidad
 
@@ -441,8 +357,6 @@ Tenemos un total de 32 variables numéricas (cuantitativas) y 3 variables de tip
 
 ```{r}
 #primero creamos un mapa con los barrios y distrito
-library(sf)
-library(ggplot2)
 
 # Lee el archivo GeoJSON
 datos_geojson <- st_read("./data/barris-barrios.geojson")
@@ -452,15 +366,18 @@ datos_geojson <- st_read("./data/barris-barrios.geojson")
 ```
 
 ```{r}
-library(leaflet)
+# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
+vuln2 <- vuln[c('Barrio','Indice_Vuln')]
+colnames(vuln2) <- c('nombre','Indice_Vuln')
+datos_geojson <- merge(x = datos_geojson, y = vuln2)
 
-datos_geojson <- datos_geojson %>%
-  mutate(Indice_Vuln = df$Indice_Vuln[which(df$Barrio %in% datos_geojson$nombre)])
-
+# Creo los popup del mapa
 popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
 
-pal <- colorFactor(c('green','gray','blue','red'), levels = levels(datos_geojson$Indice_Vuln))
+# Escojo una paleta de colores
+pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
 
+# Creo el mapa
 leaflet(data = datos_geojson) %>%
   addTiles() %>%
   addPolygons(fillColor = pal(datos_geojson$Indice_Vuln),
@@ -479,3 +396,201 @@ leaflet(data = datos_geojson) %>%
             opacity = 1)
 
 ```
+
+
+## Representación de los datos
+
+```{r}
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+for (i in columnas_numericas) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+
+```
+
+Una cosa que me ha interesado es ver si la diferencia del aumeto de precio de compra en función de la vulnerabilidad
+```{r eval=FALSE, include=FALSE}
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', 'precio10', 'precio22')
+
+precio_compra %>%
+  pivot_longer(precio10:precio22, names_to = 'Año', values_to = 'Precio')
+
+ggplot(precio_compra, aes(x = df.Indice_Vuln)) + geom_boxplot(aes(y = `df..Precio_2010..Euros.m2..de.compra.`)) + geom_boxplot(aes(y = `df..Precio_2022..Euros.m2..de.compra.`, fill = 'orange'))
+```
+
+
+## Detección de anomalías
+
+### Detección de valores perdidos
+
+Antes de tratar con nuestros datos, vamos a analizar la situación de nuestro dataset. Primero, vamos a analizar los valores perdidos.
+
+```{r}
+aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortVars = TRUE, sortCombs = TRUE)
+```
+
+Este gráfico nos muestra las observaciones con valores perididos y en qué columnas se hayan. Por ejemplo, para la primera observación, vemos como todas las columnas a excepción de dos cuentan con un NA, y así sucesivamente, hasta llegar a ver que hay 70 observaciones sin ningún valor perdido.
+
+
+```{r}
+sum(is.na(df))
+```
+
+Podemos ver que la cantidad de valores perdidos en nuestro conjunto no es precisamente pequeña, y principalmente se debe al hecho de que no todos los conjuntos de datos que hemos fusionado contenían información de todos los barrios, por lo que a la hora de unirlos todos se han generado NAs en las observaciones donde no existían datos.
+
+Una cosa que salta a la vista de las variables es esa observación que cuenta con casi todos los valores peridos, que es la del barrio "RAFALELL-VISTABELLA", que no cuenta con ninguna información numérica en nuestro dataset. Por ello, lo mejor que podemos hacer es eliminar la observación.
+
+```{r}
+df[df$Barrio=="RAFALELL-VISTABELLA",]
+df%<>%drop_na("Importe Recibos personalidad F")
+
+summary(df)
+```
+
+En el summary podemos ver que variables son las que cuentan con datos perdidos, y por tanto las que debemos procesar.
+
+Otra que resalta de las variables provenientes del dataset IBI es que cuentan con un mínimo de 0, mientras que la media de los valores ronda valores muy altos. Esto se puede deber a que hay ciertas actividades que están presentes en un pequeño número de barrios, como los espectáculos o la actividad religiosa. Dado que estos datos tienen sentido, vamos a mantenerlos, ya que pasarlos a NA nos daría una media de estas actividades totalmente irreal. En cambio, en el resto de variables, como precios de alquiler y compra, y zonas verdes, si sería interesante cambiar estos NA por la mediana de los barrios de su misma vulnerabilidad, ya que estos NA si se pueden deber a una ausencia de medición. 
+
+Además, dado que algunas columnas, como la de areas, tiene un gran número de NA, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana. En el caso de los precios de compra de 2022, usaremos la renta media del barrio, que cuentan con una correlación de 0.91:
+
+```{r}
+reg<-lm(`Precio_2022 (Euros/m2) de compra`~renda_mitj,df)
+  
+df%<>%mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`)&!is.na(renda_mitj),reg$coefficients[1]+renda_mitj*reg$coefficients[2],`Precio_2022 (Euros/m2) de compra`))
+
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`),median(`Precio_2022 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2022 (Euros/m2) de compra`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2010 (Euros/m2) de compra`=ifelse(is.na(`Precio_2010 (Euros/m2) de compra`),median(`Precio_2010 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2010 (Euros/m2) de compra`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2022 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2022 (Euros/m2) de alquiler`),median(`Precio_2022 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2022 (Euros/m2) de alquiler`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Precio_2010 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2010 (Euros/m2) de alquiler`),median(`Precio_2010 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2010 (Euros/m2) de alquiler`))%>%
+  ungroup() 
+```
+
+```{r}
+df %<>%
+  group_by(`Indice_Vuln`) %>% 
+  mutate(`Num_bancos`=ifelse(is.na(`Num_bancos`),median(`Num_bancos`,na.rm = TRUE),`Num_bancos`))%>%
+  ungroup() 
+```
+
+```{r}
+aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortVars = TRUE, sortCombs = TRUE)
+```
+
+Tras esto hemos logrado pasar de tener un número muy elevado de NAs a tener solo 4 en ciertas varibles. Estos NAs están en los barrios que carecen de índice de vulverabilidad, por lo que tendremos que esperar a ponerles una etiqueta a estos barrios para librarnos de los NAs de forma adecuada.
+
+### Detección de outliers
+
+Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar. 
+
+Para la detección de outliers vamos a usar los métodos 3-sigma y boxplot, con las funciones definidas en la práctica 5.
+
+```{r}
+reglasigma<-function(x){
+  x<-x[!is.na(x)& is.numeric(x)]
+  out <- logical(length(x)) 
+  
+  for(i in 1:length(x)){
+    if(abs(x[i]-mean(x))>3*sd(x)){
+      out[i]<-TRUE
+    }
+  }
+  if (all(!out)){
+    return(NA)
+  } else {
+    return(out)
+  }
+}
+
+reglaboxplot<-function(x){
+  x<-x[!is.na(x)& is.numeric(x)]
+  out <- logical(length(x)) 
+  
+  for(i in 1:length(x)){
+    if(x[i]>quantile(x,0.75)+1.5*IQR(x)){
+      out[i]<-TRUE
+    } else if (x[i]<quantile(x,0.25)-1.5*IQR(x)){
+      out[i]<-TRUE
+    }
+  }
+  if (all(!out)){
+    return(NA)
+  } else {
+    return(out)
+  }
+}
+```
+
+Vamos a poner un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la variable `risc_pobre`, el valor introducido para el barrio de Benimaclet, distaba 43.76 veces el rango intercuartílico de la mediana de la distribución. Por tanto, se ha considerado un error de *input* y se le ha seleccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
+
+```{r}
+# Corrección de outliers gráfica
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
+
+risc_pobre_filtrada <- df %>%
+  filter(Indice_Vuln == 'Vulnerable') %>%
+  filter(risc_pobre < 100) %>%
+  select(risc_pobre)
+df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
+
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
+```
+
+Para el resto de variables, vamos a aplicar las funciones vistas en busca de posibles outliers.
+
+```{r}
+outliers <- df %>%
+  summarise(across(where(is.numeric), list(Sigma = ~sum(reglasigma(.)), Boxplot = ~sum(reglaboxplot(.))),.names = "{col};{fn}"))
+
+outliers%<>%
+  pivot_longer(cols=everything(), names_to = "Var",values_to = "Valor")%>%
+  separate(Var,into=c("Variable", "Regla"),sep=";")%>%
+  spread(key=Regla,value=Valor)
+
+outliers
+```
+
+Viendo que la función boxplot detecta un número excesivo de outliers contando las pocas observaciones que tenemos, vamos a hacer caso a la regla sigma, y en caso de que haga falta modificar los outliers, solamente trataremos los que esta detecta, pasandolos a la mediana al igual que el ejemplo anterior, o usando alguna otra columna que esté muy correlacionada.
+
+Un ejemplo de outlier puede verse en la variable que muestra la actividad cultural del barrio, viendo como la ciudad de las artes y las ciencias tiene un valor muchísimo más alto que el resto:
+
+```{r}
+p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vuln, y =.data[["Imp. Recibos Actv. Cultural"]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación con Imp. Recibos Actv. Cultural"))
+  print(p)
+  
+  print(df$`Imp. Recibos Actv. Cultural`[df$Barrio=="CIUTAT DE LES ARTS I DE LES CIENCIES"])
+```
+
+Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación, mantendremos estos outliers en nuestro dataset.
