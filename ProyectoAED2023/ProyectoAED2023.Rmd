@@ -782,12 +782,13 @@ print(strong_correlations_spearman)
 ```{r}
 library(corrplot)
 
-corrplot(cor_spearman, method = "circle", type = "upper", order = "hclust",
+corrplot(mar = c(1, 0, 1, 0), cor_spearman, method = "circle", type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45,
          tl.cex = 0.3,
          cl.lim = c(-1, 1), cl.cex = 0.3, cl.ratio = 0.1,
          addCoef.col = "black", number.cex = 0.25, coef.cex = 0.3,
-         col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200))
+         col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200),
+         main = "Correlaciones Spearman")
 ```
 
 
@@ -871,4 +872,30 @@ legend("topright",
        cex = 0.8)
 
 ```
+
+#Realizamos un test chi-cuadrado para conocer si hay una relacion clara entre el distrito en el que se encuentra el barrio y el indice de vulnerabilidad de ese barrio. El resultado es un p-value de 0.01966, por lo que podemos rechazar la hipotesis nula de que las variables son independientes a un nivel de significancia del 0.05 (nivel de significancia estándar).
+```{r}
+chisq_result_distrito <- chisq.test(df$Distrito, df$Indice_Vuln)
+print(chisq_result_distrito)
+```
+```{r}
+library(ggmosaic)
+ggplot(data = df) +
+    geom_mosaic(aes(weight = 1, x = product(Distrito), fill = Indice_Vuln)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = rel(0.8))) +
+    labs(title = "Mosaic Plot de Distrito vs Indice_Vuln", x = "Distrito", y = "Índice de Vulnerabilidad")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
