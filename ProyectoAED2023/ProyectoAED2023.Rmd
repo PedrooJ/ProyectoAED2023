@@ -335,14 +335,11 @@ Tenemos un total de 33 variables numéricas (cuantitativas) y 3 variables de tip
 
 Claramente este conjunto de datos gira entorno a un objeto, los barrios de Valencia. Además, la variable del Índice de Vulnerabilidad consideramos que tiene muchísimo interés. Por tanto, todo nuestro trabajo va a consistir en encontrar las variables que más influyen en esta vulnerabilidad, y encontrar la manera en la que estas contribuyen.
 
-Dado que la variable vulnerabilidad es de tipo factor, hemos tratado de responder estas preguntas, primero, tratando de ver como están correlacionadas las variables numéricas entre sí, creando así unos grupos dentro de las variables. Posteriormente, hemos realizado diferentes gráficas para poder relacionar la compleja relación entre las mismas.
+Hemos tratado de responder estas preguntas, primero, realizando un estudio de la correlación entre todas las variables numericas de nuestro dataset, así como de las dos variables categoricas del mismo, creando así unos grupos dentro de las variables. Posteriormente, hemos realizado diferentes gráficas para poder relacionar la compleja relación entre las mismas.
 
-# Estudio de la correlación
-
-(Te encargas tu Pedro)
+# Estudio de la correlación para variables numericas
 
 ```{r}
-# Selecciona solo columnas numéricas
 df_numeric <- select_if(df, is.numeric)
 
 # Correlación de Pearson
@@ -354,86 +351,136 @@ cor_spearman <- cor(df_numeric, method = "spearman", use = "complete.obs")
 
 
 ```{r}
-# Convertir la matriz de correlación a un formato largo
+# Pearson
 cor_pearson_long <- as.data.frame(cor_pearson) %>%
   rownames_to_column(var = "Variable1") %>%
   gather(key = "Variable2", value = "Correlation", -Variable1)
 
-# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+# Filtrar las correlaciones mayores a 0.8 y menores de 1 (para positivos y negativos)
 strong_correlations <- cor_pearson_long %>%
   filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
   filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
 
-# Mostrar los resultados
+# Spearman
+cor_spearman_long <- as.data.frame(cor_spearman) %>%
+  rownames_to_column(var = "Variable1") %>%
+  gather(key = "Variable2", value = "Correlation", -Variable1)
+
+# Filtrar las correlaciones mayores a 0.8 y menores de 1 (para positivos y negativos)
+strong_correlations_spearman <- cor_spearman_long %>%
+  filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
+  filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
+
 print(strong_correlations)
-
+print(strong_correlations_spearman)
 ```
-```{r}
-# Establecer la semilla para reproducibilidad
-set.seed(130)
 
-# Crear un grafo
-graph_data <- graph_from_data_frame(strong_correlations, directed = FALSE)
+
+```{r}
+corrplot(mar = c(1, 0, 1, 0), cor_spearman, method = "circle", type = "upper", order = "hclust",
+         tl.col = "black", tl.srt = 45,
+         tl.cex = 0.3,
+         cl.lim = c(-1, 1), cl.cex = 0.3, cl.ratio = 0.1,
+         addCoef.col = "black", number.cex = 0.25, coef.cex = 0.3,
+         col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200),
+         main = "Correlaciones Spearman")
+```
+En este grafico de correlaciones de Spearman podemos observar visualmente como de correlacionadas están todas nuestras variables entre todas ellas, ya que estamos representando las correlaciones de spearman, éstas no tienen por qué ser relaciones lineales. Ya que no se puede observar de forma clara las relaciones, realizaremos un diagrama de Red donde poder ver solo las más grandes tanto de Pearson como de Spearman.
+
+Primero, calcularemos las correlaciones de spearman que no estén en pearson, ya que una correlación alta de pearson implica tambien una correlación alta de spearman, pero saber que es de pearson nos da una información mayor a si sabemos que es de spearman, ya que nos dice que la relación es lineal. Posteriormente, representaremos en un diagrama de red las correlaciones de pearson y las correlaciones de spearman que no sean también de pearson.
+
+
+```{r}
+# Unir ambos data frames
+all_correlations <- rbind(strong_correlations, strong_correlations_spearman)
+
+# Crear una función para ordenar las variables (para que las parejas sean consistentes en orden)
+order_pair <- function(df) {
+  df %>%
+    rowwise() %>%
+    mutate(Variable1 = pmin(Variable1, Variable2),
+           Variable2 = pmax(Variable1, Variable2)) %>%
+    ungroup()
+}
+
+# Ordenar pares en ambos data frames
+all_correlations_order <- order_pair(all_correlations)
+strong_correlations_order <- order_pair(strong_correlations)
+
+# Restar ambos dataframes
+spearman_not_in_pearson <- anti_join(all_correlations_order, strong_correlations_order, 
+                                 by = c("Variable1", "Variable2"))
+# Asegurarse de que no hay enlaces de un nado a si mismo
+spearman_not_in_pearson <- spearman_not_in_pearson %>%
+                            filter(Variable1 != Variable2)
+```
+
+```{r}
+set.seed(137)
+
+spearman_not_in_pearson <- spearman_not_in_pearson %>%
+  dplyr::select(Variable1, Variable2, Correlation) %>%
+  mutate(Method = "Spearman")
+
+strong_correlations <- strong_correlations %>%
+  dplyr::select(Variable1, Variable2, Correlation) %>%
+  mutate(Method = "Pearson")
+
+# Combina los datos de Pearson y Spearman
+combined_correlations <- rbind(strong_correlations, spearman_not_in_pearson)
+
+# Crea un grafo a partir de los datos combinados
+graph_data <- graph_from_data_frame(combined_correlations, directed = FALSE)
 
 # Ajustar atributos del nodo
 V(graph_data)$color <- "skyblue"
 V(graph_data)$size <- 6
 V(graph_data)$frame.color <- "black"
 
-# Queremos que las líneas varíen entre 1 y 5 en grosor
+# Ajustar atributos de las aristas
 cor_min <- 0.8
 cor_max <- 1.0
 width_min <- 1
 width_max <- 5
-E(graph_data)$width <- (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * 
-                       (width_max - width_min) + width_min
+E(graph_data)$width <- ifelse(E(graph_data)$Method == "Pearson",
+                              (abs(E(graph_data)$Correlation) - cor_min) / (cor_max - cor_min) * (width_max - width_min) + width_min,2)
 
-# Elegir un layout que ofrezca más espacio y optimizar para evitar superposición
+E(graph_data)$lty <- ifelse(E(graph_data)$Method == "Pearson", 1, 3)
+
 layout <- layout_with_fr(graph_data)
 
-# Dibujar el gráfico
-par(mar = c(0, 0, 1.5, 0)) # Ajustar los márgenes si es necesario
+par(mar = c(0, 0, 1.5, 1))
 plot(graph_data, layout = layout, vertex.label.color = "black", vertex.label.cex = 0.7,
-     vertex.label.dist = 1.2, # Aumentar la distancia de las etiquetas de los nodos
-     edge.label = NA, # Ocultar las etiquetas de las aristas para despejar el gráfico
-     edge.color = "gray",
-     main = "Red de Correlaciones Pearson > 0.8")
+     vertex.label.dist = 1.2,
+     edge.label = NA,
+     edge.color = ifelse(E(graph_data)$Correlation < 0, "red", "gray"),
+     main = "Red de Correlaciones")
+
+legend("topright",
+       legend = c("Pearson > 0.8", "Pearson < -0.8", "Spearman > 0.8", "Spearman < -0.8"),
+       col = c("gray", "red", "gray", "red"),
+       lty = c(1,1,3,3),
+       cex = 0.8)
 
 ```
+En este diagrama queda muy claro las relaciones entre variables con correlaciones altas, diferenciando correlacion pearson de la de spearman, y correlaciones negativas de positivas. Podemos observar que los importes de los distintos recibos están muy correlacionados y estos a su vez lo están con la población a través de los recibos de personalidad física, la población además ésta correlacionada con el desempleo. Por otro lado, los recibos de actividades de espectaculo y de actividades de cultura están muy correlacionados. Por último, las variables que reflejan el nivel adquisitivo también están muy correlacionadas entre ellas e inversamente correlacionadas con el riesgo de pobreza. De aquí podríamos si quisieramos reducir mucho el número de variables de nuestro dataset, elegir una variable de cada grupo mostrado y eliminar el resto, pues aportan poca información.
 
+
+# Estudio de la correlación para variables categoricas
+
+Realizamos un test chi-cuadrado para conocer si hay una relacion clara entre el distrito en el que se encuentra el barrio y el indice de vulnerabilidad de ese barrio. El resultado es un p-value de 0.01966, por lo que podemos rechazar la hipotesis nula de que las variables son independientes a un nivel de significancia del 0.05 (nivel de significancia estándar).
 ```{r}
-# Crear un gráfico de etiquetas
-ggplot(strong_correlations, aes(x = Variable1, y = Variable2, label = round(Correlation, 2))) +
-  geom_tile(aes(fill = Correlation), color = "white") +
-  geom_text() +
-  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0.8) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
+chisq_result_distrito <- chisq.test(df$Distrito, df$Indice_Vuln)
+print(chisq_result_distrito)
 ```
-
-
-
-
+Podemos graficar en un mosaico estas dos variables para observar que efectivamente existe una relación entre ambas.
 ```{r}
-# Convertir cor_pearson a formato largo
-cor_pearson_long <- cor_pearson %>% 
-                    as.data.frame() %>% 
-                    rownames_to_column(var = "Variable1") %>% 
-                    gather(key = "Variable2", value = "Correlation", -Variable1)
+library(ggmosaic)
+ggplot(data = df) +
+    geom_mosaic(aes(weight = 1, x = product(Distrito), fill = Indice_Vuln)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = rel(0.8))) +
+    labs(title = "Mosaic Plot de Distrito vs Indice_Vuln", x = "Distrito", y = "Índice de Vulnerabilidad")
 
-# Visualizar con ggplot2
-ggplot(cor_pearson_long, aes(x = Variable1, y = Variable2, fill = Correlation)) +
-    geom_tile() +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-
-```{r}
-# Suponiendo que tu dataframe se llama df
-write.table(df, file = "barrios.txt", sep = "\t")
 ```
 
 # Detección de anomalías
@@ -613,6 +660,77 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
 ```
 
 Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación. Por tanto, hemos decidido mantender estos outliers en nuestro dataset. En ciertos casos interesará eliminarlos siguiendo la regla sigma como hemos visto anteriormente, pero como nos limitamos a un análisis exploratorio, nos limitaremos a detectarlos.
+
+
+#Analisis Univariante
+
+Realizamos un estudio de las frecuencias en nuestras variables categoricas, que son dos variables de mucho interes en nuestro análisis, el indice de vulnerabilidad y los distritos.
+```{r}
+frecuencias_distrito <- table(df$Distrito)
+df_frecuencias_distrito <- as.data.frame(frecuencias_distrito)
+names(df_frecuencias_distrito) <- c("Distrito", "Frecuencia")
+
+ggplot(df_frecuencias_distrito, aes(x = Distrito, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6),plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Distritos", x = "Distrito", y = "Frecuencia")
+
+frecuencias_Indice_Vuln <- table(df$Indice_Vuln)
+df_frecuencias_Indice_Vuln <- as.data.frame(frecuencias_Indice_Vuln)
+names(df_frecuencias_Indice_Vuln) <- c("Indice_Vuln", "Frecuencia")
+
+ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8),plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Indice Vulnerabilidad", x = "Distrito", y = "Frecuencia")
+```
+Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y pot. vulnerable.
+
+A continuación, estudiamos la variable densidad ya que es una medida de interés, podemos observar que a pesar de tener algun pico en alto como en densidades muy pequeñas, se distribuye bastante uniformemente. También calculamos algunos parametros que pueden ser de interés, como que la media de la densidad en Valencia es de 187.4078.
+```{r}
+ggplot(df, aes(x = Densidad)) +
+  geom_histogram(binwidth = 10,   
+                 fill = "blue", 
+                 color = "black") +
+  labs(title = "Histograma de Densidad",
+       x = "Densidad",
+       y = "Frecuencia") +
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+summary(df$Densidad)
+```
+
+#Analisis Bivariante
+
+Al contrario de lo que podríamos pensar, en nuestra red de correlaciones no vemos una unión entre el precio de compra del metro cuadrado y el precio de alquiler del metro cuadrado, así que vamos a analizar esta relación. Vemos que la correlación entre el metro cuadrado de compra y de alquiler es alta pero no tanto como podríamos esperar.
+```{r}
+cor_pearson_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "pearson", use = "complete.obs")
+cor_pearson_precios
+
+cor_spearman_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "spearman", use = "complete.obs")
+cor_spearman_precios
+```
+
+Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso. 
+
+Aprovecharemos este analisis para ver como afectan estas dos variables a nuestra variable de interés, la vulnerabilidad. Al añadirle como tercera variable el indice de vulnerabilidad de forma de color de punto, podemos observar que hay una relación entre el indice de vulnerabilidad y el precio del metro cuadrado de compra pero no así con el precio del metro cuadrado de alquiler. Esto quiere decir que los barrios donde la compra de vivienda es más cara son barrios no vulnerables, mientras que si el precio de alquiler es alto no querrá decir que el barrio no sea vulnerable.
+```{r}
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`, color=Indice_Vuln)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+```
+
 
 # Representación de los datos
 
