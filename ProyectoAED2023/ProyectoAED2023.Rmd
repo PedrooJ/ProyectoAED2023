@@ -258,8 +258,9 @@ knit_hooks$set(inline = function(x) {
 # Carga de librerías
 
 ```{r}
+library(dplyr)
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr")
+packages = c("dplyr","MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr")
 pacman::p_load(char=packages)
 ```
 
@@ -405,8 +406,9 @@ head(df)
 Observando las 69 variables con las que cuenta nuestro conjunto, vemos como claramente hay muchas que no necesitamos. Primero, tenemos todos los códigos de los barrios, que prácticamente cada dataset de los anteriores contaba con una o más variables de este estilo, y con distintos nombres entre sí. Vamos a empezar eliminandolas aplicando expresiones regulares, ya que todas cuentan con una cosa en común, que empiezan por "cod":
 
 ```{r}
+
 codigos<-grepl("^[Cc]od",colnames(df))
-df%<>%select(-colnames(df)[codigos])
+df%<>%dplyr::select(-which(codigos))
 ```
 
 Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer más. También tenemos otra variable redundante, que son los distritos. Como el distrito de compra es el único que no tiene ningún valor perdido, usaremos ese, y además, lo transformaremos en factor:
@@ -415,7 +417,7 @@ Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer má
 distritos<-colnames(df)[grepl("^DISTRITO|Distrito",colnames(df))]
 distritos<-distritos[distritos!="DISTRITO de compra"]
 
-df%<>%select(-distritos)
+df%<>%dplyr::select(-distritos)
 
 colnames(df)[colnames(df) == "DISTRITO de compra"] <-"Distrito"
 
@@ -428,7 +430,7 @@ Por último, vemos como dentro del dataset IBI tenemos por un lado las variables
 
 ```{r}
 num<-grepl("^Num\\.",colnames(df))
-df%<>%select(-colnames(df)[num])
+df%<>%dplyr::select(-colnames(df)[num])
 ```
 
 Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
@@ -547,7 +549,7 @@ ggplot(df_table, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
 # Creo una tabla con las columnas Dist|Barrio|Vuln|poblacion
 columnas <- c('Barrio','Distrito','Indice_Vuln','poblacion')
 df_table2 <- df %>%
-  select(columnas) %>%
+  dplyr::select(columnas) %>%
   group_by(Distrito, Indice_Vuln) %>%
   summarise(across(poblacion, list(suma=~sum(., na.rm = T))))
 
@@ -676,7 +678,7 @@ ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Dis
 risc_pobre_filtrada <- df %>%
   filter(Indice_Vuln == 'Vulnerable') %>%
   filter(risc_pobre < 100) %>%
-  select(risc_pobre)
+  dplyr::select(risc_pobre)
 df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
 
 ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
@@ -740,7 +742,6 @@ columnas_categoricas <- df[!(colnames(df) %in% columnas_categoricas)]
 library(GGally)
 library(dplyr)
 
-# Selecciona solo columnas numéricas
 df_numeric <- select_if(df, is.numeric)
 
 # Correlación de Pearson
@@ -753,27 +754,26 @@ cor_spearman <- cor(df_numeric, method = "spearman", use = "complete.obs")
 
 ```{r}
 library(tidyr)
-# Convertir la matriz de correlación a un formato largo
+# Pearson
 cor_pearson_long <- as.data.frame(cor_pearson) %>%
   rownames_to_column(var = "Variable1") %>%
   gather(key = "Variable2", value = "Correlation", -Variable1)
 
-# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+# Filtrar las correlaciones mayores a 0.8 y menores de 1 (para positivos y negativos)
 strong_correlations <- cor_pearson_long %>%
   filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
   filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
 
-# Convertir la matriz de correlación a un formato largo
+# Spearman
 cor_spearman_long <- as.data.frame(cor_spearman) %>%
   rownames_to_column(var = "Variable1") %>%
   gather(key = "Variable2", value = "Correlation", -Variable1)
 
-# Filtrar las correlaciones mayores a 0.8 y diferentes de 1
+# Filtrar las correlaciones mayores a 0.8 y menores de 1 (para positivos y negativos)
 strong_correlations_spearman <- cor_spearman_long %>%
   filter(abs(Correlation) > 0.8, abs(Correlation) < 1) %>%
   filter(!duplicated(t(apply(.[, c("Variable1", "Variable2")], 1, sort))))
 
-# Mostrar los resultados
 print(strong_correlations)
 print(strong_correlations_spearman)
 ```
@@ -790,9 +790,9 @@ corrplot(mar = c(1, 0, 1, 0), cor_spearman, method = "circle", type = "upper", o
          col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200),
          main = "Correlaciones Spearman")
 ```
+En este grafico de correlaciones de Spearman podemos observar visualmente como de correlacionadas están todas nuestras variables entre todas ellas, ya que estamos representando las correlaciones de spearman, éstas no tienen por qué ser relaciones lineales. Ya que no se puede observar de forma clara las relaciones, realizaremos un diagrama de Red donde poder ver solo las más grandes tanto de Pearson como de Spearman.
 
-
-#Que correlaciones hay de spearman que no esten en pearson
+Primero, calcularemos las correlaciones de spearman que no estén en pearson, ya que una correlación alta de pearson implica tambien una correlación alta de spearman, pero saber que es de pearson nos da una información mayor a si sabemos que es de spearman, ya que nos dice que la relación es lineal.
 ```{r}
 # Unir ambos data frames
 all_correlations <- rbind(strong_correlations, strong_correlations_spearman)
@@ -824,11 +824,11 @@ set.seed(137)
 
 # Asegúrate de que spearman_not_in_pearson tenga las mismas columnas
 spearman_not_in_pearson <- spearman_not_in_pearson %>%
-  select(Variable1, Variable2, Correlation) %>%
+  dplyr::select(Variable1, Variable2, Correlation) %>%
   mutate(Method = "Spearman")
 
 strong_correlations <- strong_correlations %>%
-  select(Variable1, Variable2, Correlation) %>%
+  dplyr::select(Variable1, Variable2, Correlation) %>%
   mutate(Method = "Pearson")
 
 # Combina los datos de Pearson y Spearman
@@ -872,6 +872,9 @@ legend("topright",
        cex = 0.8)
 
 ```
+
+
+
 Vemos que la correlación entre el metro cuadrado de compra y de alquiler es alta pero no tanto como podríamos esperar.
 ```{r}
 cor_pearson_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "pearson", use = "complete.obs")
@@ -881,9 +884,15 @@ cor_spearman_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_20
 cor_spearman_precios
 ```
 
-Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso.
+Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso. Al añadirle como tercera variable el indice de vulnerabilidad pintando los puntos, podemos observar que hay una relación entre el indice de vulnerabilidad y el precio del metro cuadrado de compra pero no así con el precio del metro cuadrado de alquiler
 ```{r}
 ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`, color=Indice_Vuln)) +
     geom_point() +
     labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
          x = "Precio por Metro Cuadrado de Compra",
@@ -907,6 +916,43 @@ ggplot(data = df) +
 
 ```
 
+#Analisis Univariante
+
+##Frecuencias en nuestras variables categoricas
+```{r}
+frecuencias_distrito <- table(df$Distrito)
+df_frecuencias_distrito <- as.data.frame(frecuencias_distrito)
+names(df_frecuencias_distrito) <- c("Distrito", "Frecuencia")
+
+ggplot(df_frecuencias_distrito, aes(x = Distrito, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6),plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Distritos", x = "Distrito", y = "Frecuencia")
+
+frecuencias_Indice_Vuln <- table(df$Indice_Vuln)
+df_frecuencias_Indice_Vuln <- as.data.frame(frecuencias_Indice_Vuln)
+names(df_frecuencias_Indice_Vuln) <- c("Indice_Vuln", "Frecuencia")
+
+ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8),plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Indice Vulnerabilidad", x = "Distrito", y = "Frecuencia")
+```
+```{r}
+ggplot(df, aes(x = Densidad)) +
+  geom_histogram(binwidth = 10,   # Ajusta esto según lo que necesites
+                 fill = "blue", 
+                 color = "black") +
+  labs(title = "Histograma de Densidad",
+       x = "Densidad",
+       y = "Frecuencia") +
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+summary(df$Densidad)
+```
 
 
 
