@@ -3,11 +3,11 @@ title: "ProyectoAED2023"
 author: "Mateo López, Aitor Arribas y Pedro José Cánovas"
 date: "2023-11-13"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     df_print: paged
+  pdf_document:
+    toc: yes
 always_allow_html: yes
 ---
 
@@ -43,7 +43,7 @@ knit_hooks$set(inline = function(x) {
 
 # Carga de librerías
 
-```{r}
+```{r echo=FALSE}
 library(pacman)
 packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2","ggmosaic","corrplot","readxl","stringr","ggpubr")
 pacman::p_load(char=packages)
@@ -56,7 +56,7 @@ Para crear el dataset con el que vamos a tratar en este proyecto, hemos extraido
 ## Vulnerabilidad
 El primer dataset [Vulnerabilidad](https://valencia.opendatasoft.com/explore/dataset/vulnerabilidad/table/) nos da información general del barrio, como la densidad de población, la renta media, o el estado de vulnerabilidad. Esta última variable será de gran interés en nuestro análisis posterior.
 
-```{r}
+```{r echo=FALSE}
 vuln <- read_delim("./data/vulnerabilidad.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
         `Geo Shape` = col_skip(), `Densitat_p` = col_skip()), 
@@ -77,7 +77,7 @@ Podemos ver en el código que es importante transformar la variable `Barrio` en 
 ## Precio de compra y alquiler
 Estos dos datasets de [compra](https://valencia.opendatasoft.com/explore/dataset/precio-de-compra-en-idealista/table/) y [alquiler](https://valencia.opendatasoft.com/explore/dataset/precio-alquiler-vivienda/table/) nos presentan informaciones similares, que es la media de precios de compra y alquiler en nuestros barrios en los años 2022 y 2010. Ya que son conjuntos muy similares, vamos a adelantarnos al próximo paso y fusionarlos en un único dataset, llamado `precios`.
 
-```{r}
+```{r echo=FALSE}
 p_compra <- read_delim("./data/precio-de-compra-en-idealista.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(`Geo Point` = col_skip(), 
         `Geo Shape` = col_skip(), Fecha_creacion = col_skip(),`Max_historico (Euros/m2)` = col_skip(), 
@@ -104,7 +104,7 @@ Vamos ahora con el dataset [IBI](https://valencia.opendatasoft.com/explore/datas
 
 Debido a que en ningún momento vamos a tratar con tiempo en este dataset, vamos a eliminar los años haciendo la media de las observaciones de cada barrio durante estos tres años, para así obtener tantas observaciones como barrios, ya que si no habrá conflictos a la hora de unir los datos.
 
-```{r}
+```{r echo=FALSE}
 ibi <- read_delim("./data/rebuts-ibi-2022.csv", delim = ";", escape_double = FALSE, col_types = cols(ID = col_skip(), geo_shape = col_skip(), geo_point_2d = col_skip(), Año = col_skip()), trim_ws = TRUE)%>%
   arrange(Barrio)%>%
   mutate_at(vars(-all_of(c("Distrito","Barrio"))), ~as.numeric(sub(",",".",.)))
@@ -120,7 +120,7 @@ head(ibi)
 ## Bancos por barrio
 Por último, vamos con nuestro último conjunto de datos, [barrios](https://valencia.opendatasoft.com/explore/dataset/bancs-en-via-publica-bancos-en-via-publica/table/), que contiene mucha información acerca de la ubicación de las entidades bancarias en nuestra ciudad. Debido a que nosotros solo vamos a tratar con barrios y no con direcciones ni nada similar, hemos decidido que lo más interesante de este conjunto es el número de bancos que podemos encontrar en cada barrio (puede ser un buen indicador de riqueza o pobreza). Guardaremos esta información en un nuevo dataset llamado `num_bancos`.
 
-```{r}
+```{r echo=FALSE}
 bancos <- read_delim("./data/bancs-en-via-publica-bancos-en-via-publica.csv", 
     delim = ";", escape_double = FALSE, col_types = cols(gid = col_skip(), 
         `Num. Policia` = col_skip(), geo_point_2d = col_skip()), 
@@ -143,7 +143,7 @@ Para ello, primero hemos abierto uno de los archivos Excel (ver Figura 1) y se h
 ![](./fig/excel.png){withd="80%"}
 *Figura 1: ejemplo de uno de los archivos Excel analizados.*
 
-```{r eval=FALSE, include=TRUE}
+```{r echo=FALSE, eval=FALSE, include=TRUE}
 #   SE HA PUESTO CON eval = FALSE PORQUE TARDA MUCHO EN CORRER
 # Obtener las rutas de todos los archivos con los que se va a trabajar
 archivos_barrios <- list.files(path = "./data/Barrios2022", pattern = 'Districte', full.names = TRUE)
@@ -229,7 +229,7 @@ Hemos tenido que aplicar una transformación a las columnas a traves de un mutat
 
 # Fusion de los dataset
 
-```{r}
+```{r echo=FALSE}
 df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
 dim(df)
@@ -238,7 +238,7 @@ tail(df)
 
 Vemos como a la hora de fusionar todos los datos en un solo dataset, tenemos un problema, y es que contamos con más observaciones de las esperadas. Deberíamos tener un total de 88 observaciones (una por cada barrio), pero en cambio, tenemos 92. Mirando el final del dataset, vemos como efectivamente hay cuatro observaciones que no se corresponden con lo deseado, así que vamos a arreglarlo.
 
-```{r}
+```{r echo=FALSE}
 # El barrio MONTOLIVET se llama únicamente en el dataset "vuln" y "num_bancos" como MONT-OLIVET
 levels(vuln$Barrio)[vuln$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
 levels(num_bancos$Barrio)[num_bancos$Barrio=="MONT-OLIVET"]<-"MONTOLIVET"
@@ -254,7 +254,7 @@ Vemos como dos de estas incongruencias se debían a la distinta forma de escribi
 
 Una vez solucionado, volvemos a crear el dataset:
 
-```{r}
+```{r echo=FALSE}
 df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
 dim(df)
@@ -266,14 +266,14 @@ Con esto, ya tenemos el número de observaciones deseadas, asi que podemos proce
 # Selección de variables inicial
 Observando las 69 variables con las que cuenta nuestro conjunto, vemos como claramente hay muchas que no necesitamos. Primero, tenemos todos los códigos de los barrios, que prácticamente cada dataset de los anteriores contaba con una o más variables de este estilo, y con distintos nombres entre sí. Vamos a empezar eliminandolas aplicando expresiones regulares, ya que todas cuentan con una cosa en común, que empiezan por "cod":
 
-```{r}
+```{r echo=FALSE}
 codigos<-grepl("^[Cc]od",colnames(df))
 df%<>%select(-colnames(df)[codigos])
 ```
 
 Con esto nos hemos quitado un total de 11 variables, pero aún podemos hacer más. También tenemos otra variable redundante, que son los distritos. Como el distrito de compra es el único que no tiene ningún valor perdido, usaremos ese, y además, lo transformaremos en factor:
 
-```{r}
+```{r echo=FALSE}
 distritos<-colnames(df)[grepl("^DISTRITO|Distrito",colnames(df))]
 distritos<-distritos[distritos!="DISTRITO de compra"]
 
@@ -288,20 +288,20 @@ df%<>%relocate(Barrio,Distrito,Indice_Vuln)
 
 Por último, vemos como dentro del dataset IBI tenemos por un lado las variables que indica el número de recibos de un cierto tipo y en otra el importe. Consideramos que nos pueden ser más de utilidad las segundas, y para no ser reduntantes vamos a eliminar las de número de recibos. Además, algunas de estas cuentan con entradas decimales, lo cual es un poco extraño para lo que la variable representa.
 
-```{r}
+```{r echo=FALSE}
 num<-grepl("^Num\\.",colnames(df))
 df%<>%select(-colnames(df)[num])
 ```
 
 Finalmente tenemos nuestro conjunto de datos cargado y liberado de variables innecesarias, vamos a echar un vistazo:
 
-```{r}
+```{r echo=FALSE}
 dim(df)
 
 head(df)
 ```
 
-```{r}
+```{r echo=FALSE}
 numeric_cols <- sapply(df, is.numeric)
 factor_cols <- sapply(df, is.factor)
 
@@ -337,9 +337,11 @@ Claramente este conjunto de datos gira entorno a un objeto, los barrios de Valen
 
 Hemos tratado de responder estas preguntas, primero, realizando un estudio de la correlación entre todas las variables numericas de nuestro dataset, así como de las dos variables categoricas del mismo, creando así unos grupos dentro de las variables. Posteriormente, hemos realizado diferentes gráficas para poder relacionar la compleja relación entre las mismas.
 
-# Estudio de la correlación para variables numericas
+# Estudio de la correlación 
 
-```{r}
+## Variables numericas
+
+```{r echo=FALSE}
 df_numeric <- select_if(df, is.numeric)
 
 # Correlación de Pearson
@@ -350,7 +352,7 @@ cor_spearman <- cor(df_numeric, method = "spearman", use = "complete.obs")
 ```
 
 
-```{r}
+```{r echo=FALSE}
 # Pearson
 cor_pearson_long <- as.data.frame(cor_pearson) %>%
   rownames_to_column(var = "Variable1") %>%
@@ -376,7 +378,7 @@ print(strong_correlations_spearman)
 ```
 
 
-```{r}
+```{r echo=FALSE}
 corrplot(mar = c(1, 0, 1, 0), cor_spearman, method = "circle", type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45,
          tl.cex = 0.3,
@@ -390,7 +392,7 @@ En este grafico de correlaciones de Spearman podemos observar visualmente como d
 Primero, calcularemos las correlaciones de spearman que no estén en pearson, ya que una correlación alta de pearson implica tambien una correlación alta de spearman, pero saber que es de pearson nos da una información mayor a si sabemos que es de spearman, ya que nos dice que la relación es lineal. Posteriormente, representaremos en un diagrama de red las correlaciones de pearson y las correlaciones de spearman que no sean también de pearson.
 
 
-```{r}
+```{r echo=FALSE}
 # Unir ambos data frames
 all_correlations <- rbind(strong_correlations, strong_correlations_spearman)
 
@@ -415,7 +417,7 @@ spearman_not_in_pearson <- spearman_not_in_pearson %>%
                             filter(Variable1 != Variable2)
 ```
 
-```{r}
+```{r echo=FALSE}
 set.seed(137)
 
 spearman_not_in_pearson <- spearman_not_in_pearson %>%
@@ -466,15 +468,15 @@ legend("topright",
 En este diagrama queda muy claro las relaciones entre variables con correlaciones altas, diferenciando correlacion pearson de la de spearman, y correlaciones negativas de positivas. Podemos observar que los importes de los distintos recibos están muy correlacionados y estos a su vez lo están con la población a través de los recibos de personalidad física, la población además ésta correlacionada con el desempleo. Por otro lado, los recibos de actividades de espectaculo y de actividades de cultura están muy correlacionados. Por último, las variables que reflejan el nivel adquisitivo también están muy correlacionadas entre ellas e inversamente correlacionadas con el riesgo de pobreza. De aquí podríamos si quisieramos reducir mucho el número de variables de nuestro dataset, elegir una variable de cada grupo mostrado y eliminar el resto, pues aportan poca información.
 
 
-# Estudio de la correlación para variables categoricas
+## Variables categoricas
 
 Realizamos un test chi-cuadrado para conocer si hay una relacion clara entre el distrito en el que se encuentra el barrio y el indice de vulnerabilidad de ese barrio. El resultado es un p-value de 0.01966, por lo que podemos rechazar la hipotesis nula de que las variables son independientes a un nivel de significancia del 0.05 (nivel de significancia estándar).
-```{r}
+```{r echo=FALSE}
 chisq_result_distrito <- chisq.test(df$Distrito, df$Indice_Vuln)
 print(chisq_result_distrito)
 ```
 Podemos graficar en un mosaico estas dos variables para observar que efectivamente existe una relación entre ambas.
-```{r}
+```{r echo=FALSE}
 library(ggmosaic)
 ggplot(data = df) +
     geom_mosaic(aes(weight = 1, x = product(Distrito), fill = Indice_Vuln)) +
@@ -489,14 +491,14 @@ ggplot(data = df) +
 
 Antes de tratar con nuestros datos, vamos a analizar la situación de nuestro dataset. Primero, vamos a analizar los valores perdidos.
 
-```{r}
+```{r echo=FALSE}
 aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortCombs = TRUE)
 ```
 
 Este gráfico nos muestra las observaciones con valores perididos y en qué columnas se hayan. Por ejemplo, para la primera observación, vemos como todas las columnas a excepción de dos cuentan con un NA, y así sucesivamente, hasta llegar a ver que hay 70 observaciones sin ningún valor perdido.
 
 
-```{r}
+```{r echo=FALSE}
 sum(is.na(df))
 ```
 
@@ -504,7 +506,7 @@ Podemos ver que la cantidad de valores perdidos en nuestro conjunto no es precis
 
 Una cosa que salta a la vista de las variables es esa observación que cuenta con casi todos los valores perdidos, que es la del barrio "RAFALELL-VISTABELLA", que no cuenta con ninguna información numérica en nuestro dataset. Por ello, lo mejor que podemos hacer es eliminarla.
 
-```{r}
+```{r echo=FALSE}
 df[df$Barrio=="RAFALELL-VISTABELLA",]
 df%<>%drop_na("Importe Recibos personalidad F")
 
@@ -515,7 +517,7 @@ En esta tabla podemos ver que variables son las que cuentan con datos perdidos, 
 
 Además, dado que algunas columnas, como las de precios, tienen un gran número de NAs, podemos usar el estudio de correlaciones que hemos visto anteriormente para sustituir el valor perdido por el equivalente en una de las columnas correlacionadas (usando una regresión, por ejemplo). En caso de tener un NA en la columna correlacionada, usaremos la mediana de los casos de su misma vulnerabilidad. En el caso de los precios de compra de 2022, usaremos la renta media del barrio, que cuentan con una correlación de 0.91:
 
-```{r}
+```{r echo=FALSE}
 reg<-lm(`Precio_2022 (Euros/m2) de compra`~renda_mitj,df)
   
 df%<>%mutate(`Precio_2022 (Euros/m2) de compra`=ifelse(is.na(`Precio_2022 (Euros/m2) de compra`)&!is.na(renda_mitj),reg$coefficients[1]+renda_mitj*reg$coefficients[2],`Precio_2022 (Euros/m2) de compra`))
@@ -529,28 +531,28 @@ df %<>%
 Dado que el resto de variables con NAs no cuentan con ningun índice de correlación extremadamente altos, imputaremos los datos faltantes con la mediana de su mismo grupo de vulnerabilidad.
 
 
-```{r}
+```{r echo=FALSE}
 df %<>%
   group_by(`Indice_Vuln`) %>% 
   mutate(`Precio_2010 (Euros/m2) de compra`=ifelse(is.na(`Precio_2010 (Euros/m2) de compra`),median(`Precio_2010 (Euros/m2) de compra`,na.rm = TRUE),`Precio_2010 (Euros/m2) de compra`))%>%
   ungroup() 
 ```
 
-```{r}
+```{r echo=FALSE}
 df %<>%
   group_by(`Indice_Vuln`) %>% 
   mutate(`Precio_2022 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2022 (Euros/m2) de alquiler`),median(`Precio_2022 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2022 (Euros/m2) de alquiler`))%>%
   ungroup() 
 ```
 
-```{r}
+```{r echo=FALSE}
 df %<>%
   group_by(`Indice_Vuln`) %>% 
   mutate(`Precio_2010 (Euros/m2) de alquiler`=ifelse(is.na(`Precio_2010 (Euros/m2) de alquiler`),median(`Precio_2010 (Euros/m2) de alquiler`,na.rm = TRUE),`Precio_2010 (Euros/m2) de alquiler`))%>%
   ungroup() 
 ```
 
-```{r}
+```{r echo=FALSE}
 df %<>%
   group_by(`Indice_Vuln`) %>% 
   mutate(`Num_bancos`=ifelse(is.na(`Num_bancos`),median(`Num_bancos`,na.rm = TRUE),`Num_bancos`))%>%
@@ -559,7 +561,7 @@ df %<>%
 
 Veamos las conclusiones:
 
-```{r}
+```{r echo=FALSE}
 aggr(df, prop = FALSE, combined = TRUE, numbers = TRUE, sortCombs = TRUE)
 ```
 
@@ -571,7 +573,7 @@ Vamos a tratar los outliers de nuestro conjunto antes de empezar a trabajar.
 
 Para la detección de outliers vamos a usar los métodos 3-sigma y boxplot, con las funciones definidas en la práctica 5.
 
-```{r}
+```{r echo=FALSE}
 reglasigma<-function(x){
   x<-x[!is.na(x)& is.numeric(x)]
   out <- logical(length(x)) 
@@ -609,7 +611,7 @@ reglaboxplot<-function(x){
 
 Vamos a aplicar las funciones vistas en busca de posibles outliers:
 
-```{r}
+```{r echo=FALSE}
 outliers <- df %>%
   summarise(across(where(is.numeric), list(Sigma = ~sum(reglasigma(.)), Boxplot = ~sum(reglaboxplot(.))),.names = "{col};{fn}"))
 
@@ -631,7 +633,7 @@ Este un ejemplo gráfico de otra forma de detectar ouliters. En el caso de la va
 
 Por tanto, se ha considerado un error de *input* y se le ha seleccionado un nuevo valor. Para ello, se ha tenido en cuenta que el análisis que se ha realizado ha sido mediante box-plots, donde se diferencian las distribuciones en función de la varaible categórica `Indice_Vuln`. Por tanto, para que no altere esta gráfica, el valor de la observación de Benimaclet se ha sustituido por la mediana correspondiente a la distribución con su misma vulnerabilidad.
 
-```{r}
+```{r echo=FALSE}
 # Corrección de outliers gráfica
 ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre antes de tratar')
 
@@ -650,7 +652,7 @@ Vemos como era un outlier que no se correspondía con los datos, y al eliminarlo
 
 Un ejemplo de outlier puede verse en la variable que muestra la actividad cultural del barrio, viendo como la ciudad de las artes y las ciencias tiene un valor muchísimo más alto que el resto:
 
-```{r}
+```{r echo=FALSE}
 p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vuln, y =.data[["Imp. Recibos Actv. Cultural"]])) +
     geom_boxplot() + 
     ggtitle(paste("Relación con Imp. Recibos Actv. Cultural")) + labs(x='Vulnerabilidad')
@@ -660,76 +662,6 @@ p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vul
 ```
 
 Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y las ciencias tiene una actividad muchísimo mayor, con un valor de 470265.7. Aun así, debido a que este dato no se debe a un error a la hora de introducir el valor en el conjunto, pero se debe a que el barrio tiene una actividad cultural mayor debido a su situación. Por tanto, hemos decidido mantender estos outliers en nuestro dataset. En ciertos casos interesará eliminarlos siguiendo la regla sigma como hemos visto anteriormente, pero como nos limitamos a un análisis exploratorio, nos limitaremos a detectarlos.
-
-
-#Analisis Univariante
-
-Realizamos un estudio de las frecuencias en nuestras variables categoricas, que son dos variables de mucho interes en nuestro análisis, el indice de vulnerabilidad y los distritos.
-```{r}
-frecuencias_distrito <- table(df$Distrito, useNA = "always")
-df_frecuencias_distrito <- as.data.frame(frecuencias_distrito)
-names(df_frecuencias_distrito) <- c("Distrito", "Frecuencia")
-
-ggplot(df_frecuencias_distrito, aes(x = Distrito, y = Frecuencia)) +
-  geom_bar(stat = "identity", fill = "blue") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6), plot.title = element_text(hjust = 0.5)) +
-  labs(title = "Frecuencia de Distritos", x = "Distrito", y = "Frecuencia")
-
-frecuencias_Indice_Vuln <- table(df$Indice_Vuln, useNA = "always")
-df_frecuencias_Indice_Vuln <- as.data.frame(frecuencias_Indice_Vuln)
-names(df_frecuencias_Indice_Vuln) <- c("Indice_Vuln", "Frecuencia")
-
-ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
-  geom_bar(stat = "identity", fill = "blue") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8), plot.title = element_text(hjust = 0.5)) +
-  labs(title = "Frecuencia de Indice Vulnerabilidad", y = "Frecuencia", x='Vulnerabilidad')
-```
-Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y pot. vulnerable. También observamos que no tenemos datos perdidos en los distritos y únicamente 4 valores perdidos en el índice de vulnerabilidad.
-
-A continuación, estudiamos la variable densidad ya que es una medida de interés, podemos observar que a pesar de tener algun pico en alto como en densidades muy pequeñas, se distribuye bastante uniformemente. También calculamos algunos parametros que pueden ser de interés, como que la media de la densidad en Valencia es de 187.4078.
-```{r}
-ggplot(df, aes(x = Densidad)) +
-  geom_histogram(binwidth = 10,   
-                 fill = "blue", 
-                 color = "black") +
-  labs(title = "Histograma de Densidad",
-       x = "Densidad",
-       y = "Frecuencia") +
-  theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-summary(df$Densidad)
-```
-
-#Analisis Bivariante
-
-Al contrario de lo que podríamos pensar, en nuestra red de correlaciones no vemos una unión entre el precio de compra del metro cuadrado y el precio de alquiler del metro cuadrado, así que vamos a analizar esta relación. Vemos que la correlación entre el metro cuadrado de compra y de alquiler es alta pero no tanto como podríamos esperar.
-```{r}
-cor_pearson_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "pearson", use = "complete.obs")
-cor_pearson_precios
-
-cor_spearman_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "spearman", use = "complete.obs")
-cor_spearman_precios
-```
-
-Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso. 
-
-Aprovecharemos este analisis para ver como afectan estas dos variables a nuestra variable de interés, la vulnerabilidad. Al añadirle como tercera variable el indice de vulnerabilidad de forma de color de punto, podemos observar que hay una relación entre el indice de vulnerabilidad y el precio del metro cuadrado de compra pero no así con el precio del metro cuadrado de alquiler. Esto quiere decir que los barrios donde la compra de vivienda es más cara son barrios no vulnerables, mientras que si el precio de alquiler es alto no querrá decir que el barrio no sea vulnerable.
-```{r}
-ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`)) +
-    geom_point() +
-    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
-         x = "Precio por Metro Cuadrado de Compra",
-         y = "Precio por Metro Cuadrado de Alquiler")
-
-ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`, color=Indice_Vuln)) +
-    geom_point() +
-    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
-         x = "Precio por Metro Cuadrado de Compra",
-         y = "Precio por Metro Cuadrado de Alquiler")
-```
 
 
 # Estudio de la vulnerabilidad
@@ -753,7 +685,7 @@ datos_geojson <- datos_geojson %>%
 ```
 Para crear los mapas, se ha utilizado la librería Leaflet, que permite la creación de mapas interactivos. En la siguiente gráfica, se muestran los barrios de Valencia, coloreados en función de la vulnerabilidad de los mismos. En primer luegar, nos ha parecido adecuado empezar representando cómo se distribuye la población de Valencia. Para ello, en un mapa, se han representado los distritos coloreados en función de la cantidad de personas que viven allí.
 
-```{r}
+```{r echo=FALSE}
 # vamos a hacer un mapa donde se muestre la cantidad de gente que vive en cada barrio
 distritos_geojson <- st_read("./data/districtes-distritos.geojson")
 # El nombre de uno de los distritos no coincide -> lo cambio a mano
@@ -773,7 +705,7 @@ distritos_geojson <- distritos_geojson %>%
   mutate(Pob_dist = sum(poblacion, na.rm = T))
 ```
 
-```{r}
+```{r echo=FALSE}
 # Creo los popup del mapa
 popups_dist <- paste0("<b>", distritos_geojson$Distrito, "</b>", "<hr>", paste('Población: \n', distritos_geojson$Pob_dist))
 
@@ -801,7 +733,7 @@ leaflet(data = distritos_geojson) %>%
 
 Esta misma gráfica, la pondeomos hacer para los barrios de Valencia
 
-```{r}
+```{r echo=FALSE}
 # Creo los popup del mapa
 popups <- paste0("<h3>", datos_geojson$Barrio, "</h3>", "<hr>", '<b>', 'Población: ', '</b>', datos_geojson$poblacion)
 
@@ -829,7 +761,7 @@ leaflet(data = datos_geojson) %>%
 
 Se observa que, la mayoría de las personas viven en la zona céntrica, y que los barrios más poblados se encuentran en esta, a pesar de ser los barrios más pequeños. Esto lo podemos coroborrar también observándo la siguiente gráfica, donde se meuestra la densidad de población de cada barrio.
 
-```{r}
+```{r echo=FALSE}
 # Creo los popup del mapa
 popups <- paste0("<h3>", datos_geojson$Barrio, "</h3>", "<hr>", '<b>', 'Población: ', '</b>', datos_geojson$Densidad)
 
@@ -888,7 +820,79 @@ leaflet(data = datos_geojson) %>%
 
 Observando el mapa, vemos que los tanto El Calvari como Benicalap son considerados como barrios vulnerables. También se observa que en su mayoría, en las zonas colindantes a los barrios vulnerables, se encuentran más barrios vulnerables.
 
-A continuación, vamos a seguir estudiando la vulnerabilidad de los barrios pero mediante diagramas de barras, el cual nos puede dar una idea más cuantitativa. En el siguiente diagrama, se muestran la cantidad de barrios que tiene cada distrito, coloreados en función de la vvulnerabilidad.
+
+## Analisis Univariante
+
+Para poder hacer un análisis más exahustivo, primero realizaremos un estudio univariante de algunas de las variables que son de mayor interes para este trabajo. Primero realizamos un estudio de las frecuencias en nuestras variables categoricas Distrito y Indice de Vulnerabilidad.
+```{r echo=FALSE}
+frecuencias_distrito <- table(df$Distrito, useNA = "always")
+df_frecuencias_distrito <- as.data.frame(frecuencias_distrito)
+names(df_frecuencias_distrito) <- c("Distrito", "Frecuencia")
+
+ggplot(df_frecuencias_distrito, aes(x = Distrito, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6), plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Distritos", x = "Distrito", y = "Frecuencia")
+
+frecuencias_Indice_Vuln <- table(df$Indice_Vuln, useNA = "always")
+df_frecuencias_Indice_Vuln <- as.data.frame(frecuencias_Indice_Vuln)
+names(df_frecuencias_Indice_Vuln) <- c("Indice_Vuln", "Frecuencia")
+
+ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8), plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Indice Vulnerabilidad", y = "Frecuencia", x='Vulnerabilidad')
+```
+Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y potencialmente vulnerable. También observamos que no tenemos datos perdidos en los distritos y únicamente 4 valores perdidos en el índice de vulnerabilidad.
+
+A continuación, estudiamos la variable densidad ya que es una medida de interés, podemos observar que a pesar de tener algún pico en densidades muy pequeñas, se distribuye bastante uniformemente. También calculamos algunos parametros que pueden ser de interés, como que la media de la densidad en Valencia es de 187.4078.
+```{r echo=FALSE}
+ggplot(df, aes(x = Densidad)) +
+  geom_histogram(binwidth = 10,   
+                 fill = "blue", 
+                 color = "black") +
+  labs(title = "Histograma de Densidad",
+       x = "Densidad",
+       y = "Frecuencia") +
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+summary(df$Densidad)
+```
+
+## Analisis Bivariante
+
+Al contrario de lo que podríamos pensar, en nuestra red de correlaciones no vemos una unión entre el precio de compra del metro cuadrado y el precio de alquiler del metro cuadrado, así que vamos a analizar esta relación y como afectan a la vulnerabilidad. Vemos que la correlación entre el metro cuadrado de compra y de alquiler es alta pero no tanto como podríamos esperar.
+```{r echo=FALSE}
+cor_pearson_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "pearson", use = "complete.obs")
+cor_pearson_precios
+
+cor_spearman_precios <- cor(df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2022 (Euros/m2) de alquiler`, method = "spearman", use = "complete.obs")
+cor_spearman_precios
+```
+
+Esto implica que, en algunos barrios, el precio de compra puede ser relativamente alto mientras que el precio de alquiler puede ser bajo, o viceversa. Puede ser util si queremos buscar una vivienda para alquilar o comprar ya que vemos que barrios son mejores para cada caso. 
+```{r echo=FALSE}
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+```
+
+Aprovecharemos este analisis para ver como afectan estas dos variables a nuestra variable de interés, la vulnerabilidad. Al añadirle como tercera variable el indice de vulnerabilidad de forma de color de punto, podemos observar que hay una relación entre el indice de vulnerabilidad y el precio del metro cuadrado de compra pero no así con el precio del metro cuadrado de alquiler. Esto quiere decir que los barrios donde la compra de vivienda es más cara son barrios no vulnerables, mientras que si el precio de alquiler es alto el barrio podría ser vulnerable.
+```{r echo=FALSE}
+ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m2) de alquiler`, color=Indice_Vuln)) +
+    geom_point() +
+    labs(title = "Relación entre Precio por Metro Cuadrado de Compra y Alquiler",
+         x = "Precio por Metro Cuadrado de Compra",
+         y = "Precio por Metro Cuadrado de Alquiler")
+```
+
+
+A continuación, vamos a seguir estudiando la vulnerabilidad de los barrios pero mediante diagramas de barras, el cual nos puede dar una idea más cuantitativa. En el siguiente diagrama, se muestran la cantidad de barrios que tiene cada distrito, coloreados en función de la vulnerabilidad. Se trata del mismo grafico que hemos realizado para mostrar la relación entre la vulnerabilidad y los distritos, pero esta vez en formato de barras.
 
 ```{r echo=FALSE}
 ## Estudio de Vulnerabilidad por distrito
@@ -962,7 +966,8 @@ ggplot(valores, aes(x = "", y = poblacion_porcentaje, fill = Indice_Vuln)) +
         plot.background = element_blank(),
         panel.border = element_blank()) 
 ```
-Como muestra esta gráfica, la mayoría de personas en Valencia viven en barrios no Vulnerabes, aunque la cantaidad de personas que viven en barrios vulnerables o potencialmente vulnerables es mayor.
+
+Como muestra el mosaico que ya hemos visto anteriormente, la mayoría de personas en Valencia viven en barrios no Vulnerabes, aunque la cantidad de personas que viven en barrios vulnerables o potencialmente vulnerables es mayor.
 
 ```{r echo=FALSE}
 # Mosaico en porcentajes
@@ -1097,7 +1102,7 @@ ggplot(df, aes(x = reorder(Barrio, -atur_16_64), y = atur_16_64, fill = Indice_V
 
 Sin embargo, cuando estudiamos el índice global ocurre lo contrario. Los valores más grandes corresponden a barrios no vulnerables, y cuando nos moveos a valores inferiores los barrios vulnerables son mayoritarios. De nuevo, al representar las barras de manera ordenada, vemos zonas donde dominan los barrios vulnerables, zonas no vulnerables, y en medio las zonas potencialmente vulnerables. Por tanto, vemos que este índice también está relacionado con la vulnerabildiad de un barrio.
 
-```{r}
+```{r echo=FALSE}
 ggplot(df, aes(x = reorder(Barrio, -Index_Glob), y = Index_Glob, fill = Indice_Vuln)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("#F8766D", "#619CFF", "#00BA38", "#7F7F7F"), name = "Vulnerabilidad") +
@@ -1110,7 +1115,7 @@ ggplot(df, aes(x = reorder(Barrio, -Index_Glob), y = Index_Glob, fill = Indice_V
 Para acabar, nos gustaría añadir que nos habría gustado haber realizado un análisis más avanzado con técnicas de *cloustering* para estudiar de una manera más amplia la correlación entre estas variables numéricas y la vulnerabilidad, pero es algo que se escapa de nuestro conocimiento. Por tanto, hemos intentado ver las variables que influyen en esta de manera cualitativa mediante las gráficas comentadas.
 
 En conclusión, para este análisis hemos tratado de contextualizar las variables más relevantes, observarlas, y juzgar su bondad comparándolas con otros datasets o con nuestro conocimiento. Hemos conseguido estudiar la correlación entre las variables numéricas de una manera cuantitativa y sacar los grupos que mayor correlación tienen entre sí. Asimismo, mediante las gráficas de Box-plot y los diagramas concluimos que las variables que más afectan a este son: . 
-```{r}
+```{r echo=FALSE}
 # scatter de risc_pobre - Index_soci
 df%>%
       mutate(Indice_Vuln = ifelse(Indice_Vuln == 'Pot. Vulnerable', 'Vulnerable', Indice_Vuln)) %>%
