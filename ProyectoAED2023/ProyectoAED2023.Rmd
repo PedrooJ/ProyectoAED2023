@@ -1,13 +1,13 @@
 ---
 title: "ProyectoAED2023"
-author: "Mateo López"
+author: "Mateo López, Aitor Arribas y Pedro José Cánovas"
 date: "2023-11-13"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     df_print: paged
-  pdf_document:
-    toc: yes
 always_allow_html: yes
 ---
 
@@ -135,9 +135,9 @@ head(num_bancos)
 
 ## Población
 
-Este conjunto contiene el area y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de areas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
+Este conjunto contiene el área y la población de los diferentes barrios. Hemos considerado este dataset debido a que los datos de áreas y densidad de población que nos proporcionaba el conjunto vulnerabilidad y barrios no cuadraban con nuestras búsquedas y carecían de sentido. Por ello, hemos considerado este otro que se ajusta mucho mejor. Para calcular la densidad usaremos la función mutate.
 
-Este *dataset* se trata de un directorio donde se encuentran un total de 176 archivos Excel. Dos de estos aportan información relacionada con Valencia, mientras que el resto dan información específica de cada barrio (por cada barrio hay dos archivos, uno en castellano y otro en valenciano). Por tanto, hemos creado un programa que abra uno a uno los archivos en un idioma y obtenga la información que deseamos para después guardarla en un dataframe.
+Este dataset se trata de un directorio donde se encuentran un total de 176 archivos Excel. Dos de estos aportan información relacionada con Valencia, mientras que el resto dan información específica de cada barrio (por cada barrio hay dos archivos, uno en castellano y otro en valenciano). Por tanto, hemos creado un programa que abra uno a uno los archivos en un idioma y obtenga la información que deseamos para después guardarla en un dataframe.
 
 Para ello, primero hemos abierto uno de los archivos Excel (ver Figura 1) y se ha estudiado como abordar el problema. Después, se ha cargado uno de ellos, y se ha buscado la manera de obtener la información referida al nombre del barrio, el área y la población del mismo (recuadros amarillos en la Figura 1). 
 ![](./fig/excel.png){withd="80%"}
@@ -641,7 +641,7 @@ risc_pobre_filtrada <- df %>%
   select(risc_pobre)
 df$risc_pobre[df['Barrio'] == 'BENIMACLET'] <- median(risc_pobre_filtrada[[1]])
 
-ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')
+ggplot(df, aes(x = Indice_Vuln, y = risc_pobre)) + geom_boxplot() + ggtitle('Distribución risc_pobre después de tratar')+ labs(x='Vulnerabilidad')
 ```
 
 Vemos como era un outlier que no se correspondía con los datos, y al eliminarlo, tenemos una visión mucho más clara de nuestro conjunto.
@@ -653,7 +653,7 @@ Un ejemplo de outlier puede verse en la variable que muestra la actividad cultur
 ```{r}
 p<-ggplot(df[c("Imp. Recibos Actv. Cultural","Indice_Vuln")], aes(x = Indice_Vuln, y =.data[["Imp. Recibos Actv. Cultural"]])) +
     geom_boxplot() + 
-    ggtitle(paste("Relación con Imp. Recibos Actv. Cultural"))
+    ggtitle(paste("Relación con Imp. Recibos Actv. Cultural")) + labs(x='Vulnerabilidad')
   print(p)
   
   print(df$`Imp. Recibos Actv. Cultural`[df$Barrio=="CIUTAT DE LES ARTS I DE LES CIENCIES"])
@@ -684,7 +684,7 @@ ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
   geom_bar(stat = "identity", fill = "blue") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8), plot.title = element_text(hjust = 0.5)) +
-  labs(title = "Frecuencia de Indice Vulnerabilidad", x = "Índice de Vulnerabilidad", y = "Frecuencia")
+  labs(title = "Frecuencia de Indice Vulnerabilidad", y = "Frecuencia", x='Vulnerabilidad')
 ```
 Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y pot. vulnerable. También observamos que no tenemos datos perdidos en los distritos y únicamente 4 valores perdidos en el índice de vulnerabilidad.
 
