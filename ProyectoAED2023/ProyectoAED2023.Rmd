@@ -1074,11 +1074,11 @@ A pesar de que en un principio pensáramos que podría tatarse de otro caso de e
 
 Por otro lado, al no tener una definición de lo que representa cada variable en la mayoría de datasets, hemos tenido que asumirlo a partir de los nombres. A pesar de ello, solo una no nos ha cuadrado con los datos esperados. Nosotros, hemos asumido que la variable `turismes_e` daba un valor proporcional al turismo de cada barrio. Así, cabría esperar que la ciudad de las Artes y las Ciencias sea la que mayor turismo tiene. Sin embargo, si vemos los barrios a los que corresponden los mayores valores de esta variable son:
 ```{r echo=FALSE}
-library(kableExtra)
+
 df %>%
   select(Barrio, turismes_e) %>%
-  filter(turismes_e > 15) %>%
-  kable()
+  filter(turismes_e > 15)
+
 ```
 
 En un intento de contextualizar estos datos, hemos tratado de entender por qué estos barrios podrían ser los más turísticos, pero no hemos conseguido encontrar el por qué. Por tanto, hemos pensado que la carga del dataset se había hecho mal, por lo que hemos vuelto a descargar los datos y abierto el archivo, pero parece que los datos son correctos. Por tanto, concluimos que no entendemos del todo lo que representa esta variable.
