@@ -208,9 +208,9 @@ demografico$nombre[demografico$nombre == "EL CASTELLAR-L'OLIVERAR"] <- "CASTELLA
 save(demografico, file = "./data/demografico.RData")
 ```
 
-Una vez creado, vamos a cargarlo:
+Una vez creado, lo cargamos:
 
-```{r}
+```{r echo=FALSE}
 load("./data/Demografico.RData")
 
 colnames(demografico)[colnames(demografico) == "nombre"] <-"Barrio"
