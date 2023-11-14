@@ -45,7 +45,7 @@ knit_hooks$set(inline = function(x) {
 
 ```{r}
 library(pacman)
-packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2","ggmosaic","corrplot","readxl","stringr")
+packages = c("MASS","knitr","tidyverse","car",'dplyr','kableExtra',"tidyr","readr","magrittr","VIM","GGally","igraph","ggplot2","sf","leaflet","webshot2","ggmosaic","corrplot","readxl","stringr","ggpubr")
 pacman::p_load(char=packages)
 ```
 
@@ -479,7 +479,7 @@ library(ggmosaic)
 ggplot(data = df) +
     geom_mosaic(aes(weight = 1, x = product(Distrito), fill = Indice_Vuln)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = rel(0.8))) +
-    labs(title = "Mosaic Plot de Distrito vs Indice_Vuln", x = "Distrito", y = "Índice de Vulnerabilidad")
+    labs(title = "Mosaic Plot de Distrito vs Indice_Vuln", x = "Distrito", y = "Índice de Vulnerabilidad")+ scale_fill_manual(values = c("#F8766D", "#619CFF", "#00BA38", "#7F7F7F"))
 
 ```
 
@@ -732,28 +732,136 @@ ggplot(df, aes(x = `Precio_2022 (Euros/m2) de compra`, y = `Precio_2022 (Euros/m
 ```
 
 
-# Representación de los datos
+# Estudio de la vulnerabilidad
 
-## Mapa de barrios vulnerables
-
-```{r}
+En primer lugar, hemos representado un mapa de valencia, donde se han superpuesto formas geométricas (polígonos) que indican los distintos barrios de Valencia. Para ello, hemos cargado un archivo .geojson y hemos creado un nuevo *datra-frame* llamado `datos_geojson`. En este, además de guardar las variables relacionadas con el mapa interactivo, se han añadido las columnas que han resultado interesantes para representar.
+```{r carga de librerias y datos mapa}
 #primero creamos un mapa con los barrios y distrito
+library(sf)
+library(ggplot2)
 
 # Lee el archivo GeoJSON
 datos_geojson <- st_read("./data/barris-barrios.geojson")
+colnames(datos_geojson)[2] <- 'Barrio'
 
-#datos_geojson$nombre[datos_geojson$nombre %in% df$Barrio]
-#df$Barrio[!df$Barrio %in% datos_geojson$nombre]
+# Selecciono las columnas de df que quiero utilizar en la siguiente gráfica
+columnas <- c('Barrio', 'Distrito', 'Indice_Vuln', 'area','poblacion','Densidad')
+
+# Creo el dataframe que voy a utilizar para las gráficas
+datos_geojson <- datos_geojson %>%
+  full_join(df[columnas], by = 'Barrio')
+```
+Para crear los mapas, se ha utilizado la librería Leaflet, que permite la creación de mapas interactivos. En la siguiente gráfica, se muestran los barrios de Valencia, coloreados en función de la vulnerabilidad de los mismos. En primer luegar, nos ha parecido adecuado empezar representando cómo se distribuye la población de Valencia. Para ello, en un mapa, se han representado los distritos coloreados en función de la cantidad de personas que viven allí.
+
+```{r}
+# vamos a hacer un mapa donde se muestre la cantidad de gente que vive en cada barrio
+distritos_geojson <- st_read("./data/districtes-distritos.geojson")
+# El nombre de uno de los distritos no coincide -> lo cambio a mano
+distritos_geojson$nombre[distritos_geojson$nombre == 'POBLATS DE L\'OEST'] <- "POBLATS LOEST"
+colnames(distritos_geojson)[2] <- 'Distrito'
+
+# Selecciono las columnas que quiero utilizar en la siguiente gráfica
+columnas <- c('Barrio', 'Distrito', 'Indice_Vuln', 'area','poblacion')
+
+# Creo el dataframe que voy a utilizar para las gráficas
+distritos_geojson <- distritos_geojson %>%
+  full_join(df[columnas], by = 'Distrito')
+
+# Creo una variable nueva que sea la poblacion del distrito donde se encuentra cada barrio
+distritos_geojson <- distritos_geojson %>%
+  group_by(Distrito) %>%
+  mutate(Pob_dist = sum(poblacion, na.rm = T))
 ```
 
 ```{r}
-# Añado la columna Indice_Vuln al dataframe desde el cual hago el mapa
-vuln2 <- vuln[c('Barrio','Indice_Vuln')]
-colnames(vuln2) <- c('nombre','Indice_Vuln')
-datos_geojson <- merge(x = datos_geojson, y = vuln2)
-
 # Creo los popup del mapa
-popups <- paste0("<b>", datos_geojson$nombre, "</b>", "<hr>", datos_geojson$Indice_Vuln)
+popups_dist <- paste0("<b>", distritos_geojson$Distrito, "</b>", "<hr>", paste('Población: \n', distritos_geojson$Pob_dist))
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = distritos_geojson$Pob_dist, bins = 6)
+
+# Creo el mapa
+leaflet(data = distritos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(distritos_geojson$Pob_dist),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups_dist) %>%
+  addLegend(data = distritos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Pob_dist,
+            title = 'Población',
+            opacity = 1)
+```
+
+Esta misma gráfica, la pondeomos hacer para los barrios de Valencia
+
+```{r}
+# Creo los popup del mapa
+popups <- paste0("<h3>", datos_geojson$Barrio, "</h3>", "<hr>", '<b>', 'Población: ', '</b>', datos_geojson$poblacion)
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = datos_geojson$poblacion, bins = 6)
+
+# Creo el mapa
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$poblacion),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~poblacion,
+            title = 'Población',
+            opacity = 1)
+```
+
+Se observa que, la mayoría de las personas viven en la zona céntrica, y que los barrios más poblados se encuentran en esta, a pesar de ser los barrios más pequeños. Esto lo podemos coroborrar también observándo la siguiente gráfica, donde se meuestra la densidad de población de cada barrio.
+
+```{r}
+# Creo los popup del mapa
+popups <- paste0("<h3>", datos_geojson$Barrio, "</h3>", "<hr>", '<b>', 'Población: ', '</b>', datos_geojson$Densidad)
+
+# Escojo una paleta de colores
+pal <- colorBin("YlOrRd", domain = datos_geojson$Densidad, bins = 6)
+
+# Creo el mapa
+leaflet(data = datos_geojson) %>%
+  addTiles() %>%
+  addPolygons(fillColor = pal(datos_geojson$Densidad),
+              weight = 1,
+              opacity = 1,
+              highlightOptions = highlightOptions(color = "white",
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              color = 'black',
+              fillOpacity = 0.8,
+              popup = popups) %>%
+  addLegend(data = datos_geojson,
+            position = 'bottomright',
+            pal = pal, values = ~Densidad,
+            title = 'Densidad',
+            opacity = 1)
+```
+Efectivamente, observamos que los barrios con una mayor densidad de población se encuentran en el centro, siendo la que mayor densidad tiene El Calvari, mientras que el barrio donde más gente vive es Benicalap.
+
+En la siguiente figura, se han coloreado los barrios en función de su vulnerabilidad.
+
+```{r Mapa vulnerabilidad}
+library(leaflet)
+# Creo los popup del mapa
+popups <- paste0("<h3>", datos_geojson$Barrio, "</h3>", "<hr>", datos_geojson$Indice_Vuln,'<br>', '<b>', 'Población: ', '</b>', datos_geojson$poblacion)
 
 # Escojo una paleta de colores
 pal <- colorFactor(c('red','gray','blue','green'), levels = levels(datos_geojson$Indice_Vuln))
@@ -773,11 +881,258 @@ leaflet(data = datos_geojson) %>%
   addLegend(data = datos_geojson,
             position = 'bottomright',
             pal = pal, values = ~Indice_Vuln,
-            title = 'Leyenda',
+            title = 'Vulnerabilidad',
             opacity = 1)
 
 ```
 
+Observando el mapa, vemos que los tanto El Calvari como Benicalap son considerados como barrios vulnerables. También se observa que en su mayoría, en las zonas colindantes a los barrios vulnerables, se encuentran más barrios vulnerables.
+
+A continuación, vamos a seguir estudiando la vulnerabilidad de los barrios pero mediante diagramas de barras, el cual nos puede dar una idea más cuantitativa. En el siguiente diagrama, se muestran la cantidad de barrios que tiene cada distrito, coloreados en función de la vvulnerabilidad.
+
+```{r echo=FALSE}
+## Estudio de Vulnerabilidad por distrito
+# Creo una tabla de frecuencias, le pongo useNA para que también considere los datos faltantes
+table_data <- table(df$Distrito, df$Indice_Vuln, useNA = 'ifany')
+df_table <- as.data.frame(as.table(table_data))
+
+
+colnames(df_table) <- c('Var1', 'Vulnerabilidad', 'Freq')
+df_table$Vulnerabilidad <- factor(df_table$Vulnerabilidad, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))
+
+# Crear un gráfico de barras apiladas (mosaic plot)
+ggplot(df_table, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="Cuantidad de barrios", x="Distrito") 
+```
+
+Sin embargo, para hacernos una idea de la cantidad de gente que vive en zonas vulnerables, es más adecuado el siguiente gráfico, donde se muestran la cantidad de personas que viven en cada distrito. Asimismo, al igual que en el anterior, se ha hecho una distinción en colores en función de si estas personas viven en barrios vulnerables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Creo una tabla con las columnas Dist|Barrio|Vuln|poblacion
+columnas <- c('Barrio','Distrito','Indice_Vuln','poblacion')
+df_table2 <- df %>%
+  select(columnas) %>%
+  group_by(Distrito, Indice_Vuln) %>%
+  summarise(across(poblacion, list(suma=~sum(., na.rm = T))))
+
+df_table2$Indice_Vuln <- factor(df_table2$Indice_Vuln, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))
+
+ggplot(df_table2, aes(x = Distrito, y = poblacion_suma, fill = Indice_Vuln)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Barras apiladas") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="Vulnerabilidad", x="Distrito") 
+
+```
+
+Observamos claramente, que, la grafica anterior podía dar una idea errónea en cuanto a la cantidad de gente que vive en zonas vulnerables. 
+```{r echo=FALSE}
+# Creamos una función que va a calcular el pocerntaje de la población
+porcentaje <- function(x)
+  return(sum(x, na.rm = T) / 800180*100)
+
+# Calculamos el porcentaje en función de la vulnerabilidad y hacemos una gráfica
+valores <- df %>%
+  select(Indice_Vuln, poblacion) %>%
+  group_by(Indice_Vuln) %>%
+  summarise(across(ends_with('n'), list(porcentaje = porcentaje))) %>%
+  mutate(etiquetas = paste(round(poblacion_porcentaje,2), '%', sep = ""))
+# Le recolocamos la variable factor para que los colores estén bien
+valores$Indice_Vuln <- factor(valores$Indice_Vuln, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))
+
+# Hacemos la gráfica
+ggplot(valores, aes(x = "", y = poblacion_porcentaje, fill = Indice_Vuln)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  geom_label(aes(label = etiquetas),
+             position = position_stack(vjust = 0.6),
+             color = "black", size = 3.4,
+             show.legend = FALSE,
+             hjust = 0.5,
+             angle = 45,
+             box.padding = 0.7, 
+             label.padding = unit(0.15, "lines"), 
+             radius = 0.3)  +
+  theme_minimal() + 
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        panel.grid = element_blank(), 
+        plot.background = element_blank(),
+        panel.border = element_blank()) 
+```
+Como muestra esta gráfica, la mayoría de personas en Valencia viven en barrios no Vulnerabes, aunque la cantaidad de personas que viven en barrios vulnerables o potencialmente vulnerables es mayor.
+
+```{r echo=FALSE}
+# Mosaico en porcentajes
+df_table2 <- df_table
+suma <- df_table %>%
+  group_by(Var1) %>%
+  summarise(across(ends_with('eq'), list(suma=sum)))
+for (i in 1:length(df_table$Var1)) {
+  index <- which(suma$Var1 == df_table$Var1[i])
+  df_table2$Freq[i] <- df_table$Freq[i] / suma$Freq_suma[index]
+}
+ggplot(df_table2, aes(x = Var1, y = Freq, fill = Vulnerabilidad)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Mosaic Plot") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="Vulnerabilidad (%)", x="Distrito") 
+```
+
+Dado que en este trabajo estudiamos la relación entre diferentes variables numéricas con la vulnerabilidad de un barrio, los Box-plot resultan la mejor opción para observar esta dependencia. En estos, somos capaces de estudiar la distribución de las variables numéricas en función de la vulnerabilidad. De esta manera, si las distribuciones que encontramos muy parecidas (ver siguiente figura), decimos que no se observa una relación clara (al menos cualitativamente), y por tanto consideraremos que esta variable no es influyente.
+
+```{r echo=FALSE}
+# me quedo con las columnas numéricas + Indice_Vuln de df
+columnas_numericas <- df %>%
+  select_if(is.numeric) %>%
+  colnames()
+columnas_numéricas <- c(columnas_numericas, 'Indice_Vuln')
+columnas_numéricas <- df[columnas_numéricas]
+
+# Muestro un box-plot
+ggplot(columnas_numéricas, aes(x = Indice_Vuln, y = `Importe Recibos personalidad F`)) + geom_boxplot() +
+  labs(x = "Vulnerabilidad",
+       y = "Importe de recivos de personalidad fiscal")
+
+```
+
+Por otro lado, existen algunas variables que sí han mostrado diferentes distribuciones en función de la vulnerabilidad. A continuación, se muestran las que nos han parecido de mayor interés. Las siguientes figuras muestran aquellas que nos han parecido esperables. Es decir, no es de extrañar que en los barrios vulnerables la tasa de paro sea mayor, o que el índice global (que mide la capacidad de un barrio en términos de innovación) sea mayor en los barrios no vulnerables. Asimismo, observamos que tanto la polbación como la densidad de población es mayor en barrios vulnerables. Por otro lado, en esta última, cabe destacar que la diferenciaentre la densidad de población en barrios vulnerables y la de barrios potencialmente vulnerables o no vulnerables.
+
+
+```{r echo=FALSE}
+library(ggpubr)
+col_interes_esperables <- c("atur_16_64", "renda_mitj", "risc_pobre", "Index_Soci", "poblacion", "Densidad")
+
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+
+p <- ggplot(df, aes(x = Indice_Vuln)) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) +labs(x = "Vulnerabilidad")
+
+p1 <- p + geom_boxplot(aes(y =.data[[col_interes_esperables[1]]])) + ggtitle(paste("Relación ", col_interes_esperables[1]))
+
+p2 <- p + geom_boxplot(aes(y =.data[[col_interes_esperables[2]]])) + ggtitle(paste("Relación ", col_interes_esperables[2]))
+
+ggarrange(p1,p2,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+
+p3 <- p + geom_boxplot(aes(y =.data[[col_interes_esperables[3]]])) + ggtitle(paste("Relación ", col_interes_esperables[3]))
+
+p4 <- p + geom_boxplot(aes(y =.data[[col_interes_esperables[4]]])) + ggtitle(paste("Relación ", col_interes_esperables[4]))
+
+ggarrange(p3,p4,
+          labels = c("C", "D"),
+          ncol = 2, nrow = 1)
+
+p5 <- p + geom_boxplot(aes(y =.data[[col_interes_esperables[5]]])) + ggtitle(paste("Relación ", col_interes_esperables[5]))
+
+p6 <- p +  geom_boxplot(aes(y =.data[[col_interes_esperables[6]]])) + ggtitle(paste("Relación ", col_interes_esperables[6]))
+
+ggarrange(p5,p6,
+          labels = c("E", "F"),
+          ncol = 2, nrow = 1)
+
+```
+Asimismo, nos parece interesante comparar los precios del m$^2$ del año 2010 y 2022.
+
+```{r echo=FALSE}
+
+# Seleccionamos la parte del dataframe que queremos analizar
+precio_compra <- data.frame(df$Barrio, df$Indice_Vuln, df$`Precio_2022 (Euros/m2) de compra`, df$`Precio_2010 (Euros/m2) de compra`)
+colnames(precio_compra) <- c('Barrio', 'Indice_Vuln', '2010', '2022')
+
+# Lo ponemos tidy
+precio_compra <- precio_compra %>%
+  pivot_longer('2010':'2022', names_to = 'Año', values_to = 'Precio')
+
+# Hacemos un box-plot
+ggplot(precio_compra, aes(x = Indice_Vuln)) + geom_boxplot(aes(y = Precio, col = Año)) + labs(x= "Precio (€/m^2)") 
+```
+
+Vemos que para todas las distribuciones han sufrido un descenso de los precios, aunque para el caso de potencialmente vulnerable es el que menor cambio ha tenido.
+
+Al estudiar todos los Box-plot realizado, ha habido otra gráfica que nos ha llamado la atención. Se trata de la variable `Imp. Recibos Actv. Espectaculos` (ver siguiente figura A), que parece que debido a *outliers* no se puede observar la distribución. Sin embargo, al representar el diagrama de barras, nos hemos dado cuenta de lo que realmente sucedía.
+```{r echo=FALSE}
+# Muestro un box-plot
+p1 <- ggplot(columnas_numéricas, aes(x = Indice_Vuln, y = `Imp. Recibos Actv. Espectaculos`)) + geom_boxplot() +
+  labs(x = "Vulnerabilidad",
+       y = "Importe de Recibos activos en espectáculos")+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ p2 <- ggplot(df, aes(x=`Imp. Recibos Actv. Espectaculos`)) +
+  geom_histogram(aes(fill = Indice_Vuln)) +
+  scale_fill_manual(values = c("#F8766D", "#619CFF", "#00BA38", "#7F7F7F"), name = "Vulnerabilidad") +
+  labs(x = "Importe de Recibos de Actividades y Espectaculares",
+       y = "Frecuencia")+
+   theme(legend.position = c(0.75, 0.7))+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ 
+ggarrange(p1,p2,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+```
+A pesar de que en un principio pensáramos que podría tatarse de otro caso de error de input, al analizar estas gráficas concluimos que no era más que un *outlier*. Esta instancia  de `Imp. Recibos Actv. Espectaculos` corresponde a la Ciudad de las Artes y Ciencias y, no es de extrañar que el importes de recivos relacionados con las actividades y espectáculos sea un outlier. Asimismo, vemos que para la mayoría de las instancias el valor de esta variable es de 0. Esto tampoco parece del todo realista, por lo que esta variable no parece del todo fiable y no se utilizará para realizar el análisis de la vulnerabilidad de barrios.
+
+Por otro lado, al no tener una definición de lo que representa cada variable en la mayoría de datasets, hemos tenido que asumirlo a partir de los nombres. A pesar de ello, solo una no nos ha cuadrado con los datos esperados. Nosotros, hemos asumido que la variable `turismes_e` daba un valor proporcional al turismo de cada barrio. Así, cabría esperar que la ciudad de las Artes y las Ciencias sea la que mayor turismo tiene. Sin embargo, si vemos los barrios a los que corresponden los mayores valores de esta variable son:
+```{r echo=FALSE}
+library(kableExtra)
+df %>%
+  select(Barrio, turismes_e) %>%
+  filter(turismes_e > 15) %>%
+  kable()
+```
+
+En un intento de contextualizar estos datos, hemos tratado de entender por qué estos barrios podrían ser los más turísticos, pero no hemos conseguido encontrar el por qué. Por tanto, hemos pensado que la carga del dataset se había hecho mal, por lo que hemos vuelto a descargar los datos y abierto el archivo, pero parece que los datos son correctos. Por tanto, concluimos que no entendemos del todo lo que representa esta variable.
+
+Volviendo al estudio de la vulnerabilidad, en el siguiente gráfico de barras apliadas podemos ver la vulnerabilidad correspondiente al valor de `atur_16_64` (relacionada con el índice de paro para personas entre 16 y 64 años). Como era de esperar, los valores más grandes correspondienden a los barrios vulnerables y a medida que disminuye el valor los barrios tienden a ser no vulnerables. El hecho de que se vea una clara segragación de la vulnerabilidad al ordenar el índice de paro nos indica que estas dos variables están correlacionadas.
+
+```{r echo=FALSE}
+ggplot(df, aes(x = reorder(Barrio, -atur_16_64), y = atur_16_64, fill = Indice_Vuln)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#F8766D", "#619CFF", "#00BA38", "#7F7F7F"), name = "Vulnerabilidad") +
+  labs(title = "Barras apiladas") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="atur_16_64", x="Barrio") + 
+  theme(axis.text.x = element_blank())
+```
+
+Sin embargo, cuando estudiamos el índice global ocurre lo contrario. Los valores más grandes corresponden a barrios no vulnerables, y cuando nos moveos a valores inferiores los barrios vulnerables son mayoritarios. De nuevo, al representar las barras de manera ordenada, vemos zonas donde dominan los barrios vulnerables, zonas no vulnerables, y en medio las zonas potencialmente vulnerables. Por tanto, vemos que este índice también está relacionado con la vulnerabildiad de un barrio.
+
+```{r}
+ggplot(df, aes(x = reorder(Barrio, -Index_Glob), y = Index_Glob, fill = Indice_Vuln)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#F8766D", "#619CFF", "#00BA38", "#7F7F7F"), name = "Vulnerabilidad") +
+  labs(title = "Barras apiladas") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y="Index_Glob", x="Barrio") + 
+  theme(axis.text.x = element_blank())
+```
+
+Para acabar, nos gustaría añadir que nos habría gustado haber realizado un análisis más avanzado con técnicas de *cloustering* para estudiar de una manera más amplia la correlación entre estas variables numéricas y la vulnerabilidad, pero es algo que se escapa de nuestro conocimiento. Por tanto, hemos intentado ver las variables que influyen en esta de manera cualitativa mediante las gráficas comentadas.
+
+En conclusión, para este análisis hemos tratado de contextualizar las variables más relevantes, observarlas, y juzgar su bondad comparándolas con otros datasets o con nuestro conocimiento. Hemos conseguido estudiar la correlación entre las variables numéricas de una manera cuantitativa y sacar los grupos que mayor correlación tienen entre sí. Asimismo, mediante las gráficas de Box-plot y los diagramas concluimos que las variables que más afectan a este son: . 
+```{r}
+# scatter de risc_pobre - Index_soci
+df%>%
+      mutate(Indice_Vuln = ifelse(Indice_Vuln == 'Pot. Vulnerable', 'Vulnerable', Indice_Vuln)) %>%
+      mutate(Indice_Vuln = ifelse(Indice_Vuln == '1', 'Vulnerable', Indice_Vuln)) %>%
+      mutate(Indice_Vuln = ifelse(Indice_Vuln == '3', 'No Vulnerable', Indice_Vuln)) %>%
+      mutate(Indice_Vuln = factor(Indice_Vuln, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))) %>%
+ggplot(aes(x=risc_pobre, y = Index_Soci)) +
+    geom_point(aes(color =Indice_Vuln)) + 
+      ggtitle(paste("Relación entre risc_pobre y Index_Soci"))
+```
+
+# Apéndice
+Box-plot de tódas las variables numéricas en función de la vulnerabilidad de los barrios.
+```{r echo=FALSE}
+# Muestro un box-plot para cada variable numérica diferenciando 4 distribuciones en función de la vulnerabilidad
+for (i in columnas_numericas) {
+  p<-ggplot(columnas_numéricas, aes(x = Indice_Vuln, y =.data[[i]])) +
+    geom_boxplot() + 
+    ggtitle(paste("Relación ", i))
+  print(p)
+}
+```
 
 
 
