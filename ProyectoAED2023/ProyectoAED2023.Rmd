@@ -666,27 +666,27 @@ Vemos como dentro de los barrios no vulnerables el de la ciudad de las artes y l
 
 Realizamos un estudio de las frecuencias en nuestras variables categoricas, que son dos variables de mucho interes en nuestro análisis, el indice de vulnerabilidad y los distritos.
 ```{r}
-frecuencias_distrito <- table(df$Distrito)
+frecuencias_distrito <- table(df$Distrito, useNA = "always")
 df_frecuencias_distrito <- as.data.frame(frecuencias_distrito)
 names(df_frecuencias_distrito) <- c("Distrito", "Frecuencia")
 
 ggplot(df_frecuencias_distrito, aes(x = Distrito, y = Frecuencia)) +
   geom_bar(stat = "identity", fill = "blue") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6),plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6), plot.title = element_text(hjust = 0.5)) +
   labs(title = "Frecuencia de Distritos", x = "Distrito", y = "Frecuencia")
 
-frecuencias_Indice_Vuln <- table(df$Indice_Vuln)
+frecuencias_Indice_Vuln <- table(df$Indice_Vuln, useNA = "always")
 df_frecuencias_Indice_Vuln <- as.data.frame(frecuencias_Indice_Vuln)
 names(df_frecuencias_Indice_Vuln) <- c("Indice_Vuln", "Frecuencia")
 
 ggplot(df_frecuencias_Indice_Vuln, aes(x = Indice_Vuln, y = Frecuencia)) +
   geom_bar(stat = "identity", fill = "blue") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8),plot.title = element_text(hjust = 0.5)) +
-  labs(title = "Frecuencia de Indice Vulnerabilidad", x = "Distrito", y = "Frecuencia")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8), plot.title = element_text(hjust = 0.5)) +
+  labs(title = "Frecuencia de Indice Vulnerabilidad", x = "Índice de Vulnerabilidad", y = "Frecuencia")
 ```
-Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y pot. vulnerable.
+Vemos como la distribución no es uniforme entre todas las clases, sino que en el caso de los distritos cada uno tiene un número de barrios muy diferenciados, y en el caso de los indices de vulnerabilidad, más de la mitad de los barrios son no vulnerables mientras que el resto se dividen en vulnerables y pot. vulnerable. También observamos que no tenemos datos perdidos en los distritos y únicamente 4 valores perdidos en el índice de vulnerabilidad.
 
 A continuación, estudiamos la variable densidad ya que es una medida de interés, podemos observar que a pesar de tener algun pico en alto como en densidades muy pequeñas, se distribuye bastante uniformemente. También calculamos algunos parametros que pueden ser de interés, como que la media de la densidad en Valencia es de 187.4078.
 ```{r}
