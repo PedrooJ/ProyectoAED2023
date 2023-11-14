@@ -231,7 +231,7 @@ Hemos tenido que aplicar una transformación a las columnas a traves de un mutat
 # Fusion de los dataset
 
 ```{r echo=FALSE}
-df<-vuln%>%full_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
+df<-vuln%>%left_join(demografico,by="Barrio")%>%full_join(num_bancos,by="Barrio")%>%full_join(precios,by="Barrio")%>%full_join(ibi,by="Barrio")
 
 dim(df)
 tail(df)
@@ -1014,7 +1014,7 @@ ggplot(columnas_numéricas, aes(x = Indice_Vuln, y = `Importe Recibos personalid
 
 ```
 
-Por otro lado, existen algunas variables que sí han mostrado diferentes distribuciones en función de la vulnerabilidad. A continuación, se muestran las que nos han parecido de mayor interés. Las siguientes figuras muestran aquellas que nos han parecido esperables. Es decir, no es de extrañar que en los barrios vulnerables la tasa de paro sea mayor, o que el índice global (que mide la capacidad de un barrio en términos de innovación) sea mayor en los barrios no vulnerables. Asimismo, observamos que tanto la polbación como la densidad de población es mayor en barrios vulnerables. Por otro lado, en esta última, cabe destacar que la diferenciaentre la densidad de población en barrios vulnerables y la de barrios potencialmente vulnerables o no vulnerables.
+Por otro lado, existen algunas variables que sí han mostrado diferentes distribuciones en función de la vulnerabilidad. A continuación, se muestran las que nos han parecido de mayor interés. Las siguientes figuras muestran aquellas que nos han parecido esperables. Es decir, no es de extrañar que en los barrios vulnerables la tasa de paro sea mayor, o que el índice global (que mide la capacidad de un barrio en términos de innovación) sea mayor en los barrios no vulnerables. Asimismo, observamos que tanto la población como la densidad de población es mayor en barrios vulnerables. Por otro lado, en esta última, cabe destacar que la diferenciaentre la densidad de población en barrios vulnerables y la de barrios potencialmente vulnerables o no vulnerables.
 
 
 ```{r echo=FALSE}
@@ -1122,21 +1122,11 @@ ggplot(df, aes(x = reorder(Barrio, -Index_Glob), y = Index_Glob, fill = Indice_V
   labs(y="Index_Glob", x="Barrio") + 
   theme(axis.text.x = element_blank())
 ```
+# Conclusión
 
 Para acabar, nos gustaría añadir que nos habría gustado haber realizado un análisis más avanzado con técnicas de *cloustering* para estudiar de una manera más amplia la correlación entre estas variables numéricas y la vulnerabilidad, pero es algo que se escapa de nuestro conocimiento. Por tanto, hemos intentado ver las variables que influyen en esta de manera cualitativa mediante las gráficas comentadas.
 
-En conclusión, para este análisis hemos tratado de contextualizar las variables más relevantes, observarlas, y juzgar su bondad comparándolas con otros datasets o con nuestro conocimiento. Hemos conseguido estudiar la correlación entre las variables numéricas de una manera cuantitativa y sacar los grupos que mayor correlación tienen entre sí. Asimismo, mediante las gráficas de Box-plot y los diagramas concluimos que las variables que más afectan a este son: . 
-```{r echo=FALSE}
-# scatter de risc_pobre - Index_soci
-df%>%
-      mutate(Indice_Vuln = ifelse(Indice_Vuln == 'Pot. Vulnerable', 'Vulnerable', Indice_Vuln)) %>%
-      mutate(Indice_Vuln = ifelse(Indice_Vuln == '1', 'Vulnerable', Indice_Vuln)) %>%
-      mutate(Indice_Vuln = ifelse(Indice_Vuln == '3', 'No Vulnerable', Indice_Vuln)) %>%
-      mutate(Indice_Vuln = factor(Indice_Vuln, levels = c("Vulnerable", "No Vulnerable", "Pot. Vulnerable"))) %>%
-ggplot(aes(x=risc_pobre, y = Index_Soci)) +
-    geom_point(aes(color =Indice_Vuln)) + 
-      ggtitle(paste("Relación entre risc_pobre y Index_Soci"))
-```
+En conclusión, para este análisis hemos tratado de contextualizar las variables más relevantes, observarlas, y juzgar su bondad comparándolas con otros datasets o con nuestro conocimiento. Hemos conseguido estudiar la correlación entre las variables numéricas de una manera cuantitativa y sacar los grupos que mayor correlación tienen entre sí. Asimismo, mediante las gráficas de Box-plot y los diagramas concluimos que las variables que más afectan a este son: El paro del barrio (atur_16_,_64), el índice global (Index_Glob), densidad de población, etc.
 
 # Apéndice
 Box-plot de tódas las variables numéricas en función de la vulnerabilidad de los barrios.
